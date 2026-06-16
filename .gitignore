@@ -1,0 +1,29 @@
+# Dipendenze
+node_modules/
+
+# Build
+.next/
+out/
+dist/
+build/
+
+# Variabili d'ambiente (segrete!)
+.env
+.env.local
+.env*.local
+
+# Log
+npm-debug.log*
+yarn-error.log*
+
+# Sistema
+.DS_Store
+*.pem
+
+# Editor
+.vscode/
+.idea/
+
+# Supabase
+.branches
+.temp
