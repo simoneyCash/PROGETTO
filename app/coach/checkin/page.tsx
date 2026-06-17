@@ -1,9 +1,22 @@
 import Link from "next/link";
+import { ClipboardCheck, ChevronRight } from "@/components/ui/icons";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import { createCheckin } from "./actions";
-import { CHECKIN_STATUS } from "./status";
+import { CheckinBadge } from "@/components/ui/StatusBadge";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import {
+  Page,
+  BackLink,
+  PageHeader,
+  SectionLabel,
+  Card,
+  EmptyState,
+  Banner,
+  btn,
+  field,
+} from "@/components/ui/kit";
 
 type ClientRow = { id: string; full_name: string };
 type CheckinRow = {
@@ -20,9 +33,6 @@ const DEFAULT_PROMPT = `Com'è andata questa settimana?
 - Aderenza ad allenamenti e dieta (1-10):
 - Energia e sonno:
 - Note o difficoltà:`;
-
-const inputClass =
-  "rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-base outline-none focus:border-emerald-500";
 
 function formatDate(value: string | null): string {
   if (!value) return "Senza data";
@@ -59,50 +69,35 @@ export default async function CoachCheckins({
   const checkins = (checkinsData ?? []) as CheckinRow[];
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
-      <Link
-        href="/coach"
-        className="text-sm text-neutral-400 hover:text-neutral-200"
-      >
-        ‹ Dashboard
-      </Link>
+    <Page>
+      <BackLink href="/coach">Dashboard</BackLink>
 
-      <header className="mt-4">
-        <h1 className="text-xl font-semibold">Check-in</h1>
-        <p className="mt-1 text-xs text-neutral-500">
-          Programma una domanda periodica. Il cliente risponderà dal suo portale
-          (in arrivo); poi l&apos;AI riassumerà e tu approverai.
-        </p>
-      </header>
+      <PageHeader eyebrow="Area coach" title="Check-in" />
+      <p className="-mt-4 text-xs text-neutral-500">
+        Programma una domanda periodica. Il cliente risponderà dal suo portale
+        (in arrivo); poi l&apos;AI riassumerà e tu approverai.
+      </p>
 
-      {created && (
-        <p className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
-          Check-in programmato.
-        </p>
-      )}
-      {error && (
-        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+      {created && <Banner tone="success">Check-in programmato.</Banner>}
+      {error && <Banner tone="error">{error}</Banner>}
 
       {/* Nuovo check-in */}
-      <section className="mt-6">
-        <h2 className="text-sm font-medium text-neutral-300">Nuovo check-in</h2>
+      <section>
+        <SectionLabel>Nuovo check-in</SectionLabel>
 
         {clients.length === 0 ? (
-          <p className="mt-3 rounded-lg border border-dashed border-neutral-800 px-3 py-6 text-center text-sm text-neutral-500">
+          <EmptyState>
             Aggiungi prima un cliente in{" "}
-            <Link href="/coach/clienti" className="text-emerald-400 underline">
+            <Link href="/coach/clienti" className="text-accent underline">
               Clienti
             </Link>
             .
-          </p>
+          </EmptyState>
         ) : (
-          <form action={createCheckin} className="mt-3 flex flex-col gap-4">
+          <form action={createCheckin} className="flex flex-col gap-4">
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-neutral-300">Cliente</span>
-              <select name="client_id" defaultValue="" className={inputClass}>
+              <span className="font-medium text-neutral-300">Cliente</span>
+              <select name="client_id" defaultValue="" className={field}>
                 <option value="" disabled>
                   Scegli un cliente…
                 </option>
@@ -115,75 +110,64 @@ export default async function CoachCheckins({
             </label>
 
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-neutral-300">Domanda del check-in</span>
+              <span className="font-medium text-neutral-300">
+                Domanda del check-in
+              </span>
               <textarea
                 name="prompt"
                 defaultValue={DEFAULT_PROMPT}
                 rows={6}
-                className={inputClass}
+                className={field}
               />
             </label>
 
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-neutral-300">
+              <span className="font-medium text-neutral-300">
                 Data programmata{" "}
                 <span className="text-neutral-500">(opzionale)</span>
               </span>
-              <input type="date" name="scheduled_for" className={inputClass} />
+              <input type="date" name="scheduled_for" className={field} />
             </label>
 
-            <button
-              type="submit"
-              className="rounded-lg bg-emerald-600 px-4 py-2.5 font-medium text-white hover:bg-emerald-500"
-            >
+            <SubmitButton className={btn.primary} pendingText="Programmo…">
               Programma check-in
-            </button>
+            </SubmitButton>
           </form>
         )}
       </section>
 
       {/* Lista check-in */}
-      <section className="mt-10">
-        <h2 className="text-sm font-medium text-neutral-300">
-          Tutti i check-in{" "}
-          <span className="text-neutral-500">({checkins.length})</span>
-        </h2>
-        <ul className="mt-3 flex flex-col gap-2">
+      <section>
+        <SectionLabel>Tutti i check-in ({checkins.length})</SectionLabel>
+        <ul className="flex flex-col gap-1.5">
           {checkins.length === 0 && (
-            <li className="rounded-lg border border-dashed border-neutral-800 px-3 py-6 text-center text-sm text-neutral-500">
-              Nessun check-in ancora.
+            <li>
+              <EmptyState icon={ClipboardCheck}>
+                Nessun check-in ancora.
+              </EmptyState>
             </li>
           )}
-          {checkins.map((c) => {
-            const s = CHECKIN_STATUS[c.status] ?? {
-              label: c.status,
-              className: "bg-neutral-700/40 text-neutral-300",
-            };
-            return (
-              <li key={c.id}>
-                <Link
-                  href={`/coach/checkin/${c.id}`}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/50 px-3 py-3 transition-colors hover:border-neutral-700"
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">
-                      {clientName.get(c.client_id) ?? "Cliente"}
-                    </span>
-                    <span className="block text-xs text-neutral-500">
-                      {formatDate(c.scheduled_for)}
-                    </span>
+          {checkins.map((c) => (
+            <li key={c.id}>
+              <Link
+                href={`/coach/checkin/${c.id}`}
+                className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5 transition-colors hover:border-white/20"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">
+                    {clientName.get(c.client_id) ?? "Cliente"}
                   </span>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${s.className}`}
-                  >
-                    {s.label}
+                  <span className="block text-xs text-neutral-500">
+                    {formatDate(c.scheduled_for)}
                   </span>
-                </Link>
-              </li>
-            );
-          })}
+                </span>
+                <CheckinBadge status={c.status} />
+                <ChevronRight className="size-4 shrink-0 text-neutral-600" />
+              </Link>
+            </li>
+          ))}
         </ul>
       </section>
-    </main>
+    </Page>
   );
 }

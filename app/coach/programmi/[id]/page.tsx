@@ -1,9 +1,17 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Sparkles, TriangleAlert } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import { ProgramEditor } from "@/components/ProgramEditor";
 import { ArtifactBadge } from "@/components/ui/StatusBadge";
+import {
+  Page,
+  BackLink,
+  PageHeader,
+  SectionLabel,
+  Card,
+  Banner,
+} from "@/components/ui/kit";
 
 type Exercise = {
   exercise_id: string;
@@ -65,43 +73,38 @@ export default async function ProgramReview({
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
-      <Link
-        href={`/coach/clienti/${version.client_id}`}
-        className="text-sm text-neutral-400 hover:text-neutral-200"
-      >
-        ‹ {client?.full_name ?? "Cliente"}
-      </Link>
+    <Page>
+      <BackLink href={`/coach/clienti/${version.client_id}`}>
+        {client?.full_name ?? "Cliente"}
+      </BackLink>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold">
-          {isEditable ? "Revisiona la bozza" : c.title}
-        </h1>
-        <ArtifactBadge status={version.status} />
-      </div>
+      <PageHeader
+        eyebrow={isEditable ? "Revisione scheda" : "Scheda"}
+        title={isEditable ? "Revisiona la bozza" : c.title}
+        action={<ArtifactBadge status={version.status} />}
+      />
 
       {version.generated_by_ai && isEditable && (
-        <p className="mt-2 text-xs text-neutral-500">
-          ✨ Bozza AI — modifica liberamente, poi pubblica. Il cliente non vede
-          nulla finché non pubblichi.
-        </p>
+        <Card tone="accent" className="-mt-3 flex items-start gap-3">
+          <Sparkles className="size-5 shrink-0 text-accent" />
+          <p className="text-sm text-neutral-300">
+            Bozza AI — modifica liberamente, poi pubblica. Il cliente non vede
+            nulla finché non pubblichi.
+          </p>
+        </Card>
       )}
 
       {published && (
-        <p className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+        <Banner tone="success">
           Scheda pubblicata: ora è visibile al cliente.
-        </p>
+        </Banner>
       )}
       {saved && (
-        <p className="mt-3 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-sm text-sky-300">
+        <Banner tone="success">
           Modifiche salvate. Resta una bozza finché non pubblichi.
-        </p>
+        </Banner>
       )}
-      {error && (
-        <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+      {error && <Banner tone="error">{error}</Banner>}
 
       {isEditable ? (
         <ProgramEditor
@@ -112,7 +115,7 @@ export default async function ProgramReview({
       ) : (
         <ReadOnlyProgram content={c} />
       )}
-    </main>
+    </Page>
   );
 }
 
@@ -120,12 +123,15 @@ export default async function ProgramReview({
 function ReadOnlyProgram({ content: c }: { content: ProgramContent }) {
   return (
     <>
-      {c.summary && <p className="mt-3 text-sm text-neutral-400">{c.summary}</p>}
+      {c.summary && (
+        <p className="-mt-3 text-sm text-neutral-400">{c.summary}</p>
+      )}
 
       {c.health_flags?.length > 0 && (
-        <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
-          <p className="text-sm font-medium text-amber-300">
-            ⚠️ Da verificare (salute)
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+          <p className="flex items-center gap-2 text-sm font-medium text-amber-300">
+            <TriangleAlert className="size-4" />
+            Da verificare (salute)
           </p>
           <ul className="mt-1 list-disc pl-5 text-sm text-amber-200/90">
             {c.health_flags.map((f, i) => (
@@ -135,12 +141,10 @@ function ReadOnlyProgram({ content: c }: { content: ProgramContent }) {
         </div>
       )}
 
-      <section className="mt-6 flex flex-col gap-4">
+      <section className="flex flex-col gap-4">
+        <SectionLabel>Giorni</SectionLabel>
         {c.days?.map((day, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-4"
-          >
+          <Card key={i}>
             <div className="flex items-baseline justify-between">
               <h2 className="font-semibold">{day.label}</h2>
               <span className="text-xs text-neutral-500">{day.focus}</span>
@@ -161,20 +165,20 @@ function ReadOnlyProgram({ content: c }: { content: ProgramContent }) {
                 </li>
               ))}
             </ul>
-          </div>
+          </Card>
         ))}
       </section>
 
       {c.coach_notes && (
-        <div className="mt-4 rounded-xl border border-neutral-800 p-4">
-          <p className="text-xs uppercase tracking-wide text-neutral-500">
+        <Card>
+          <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
             Note per il coach
           </p>
           <p className="mt-1 text-sm text-neutral-300">{c.coach_notes}</p>
-        </div>
+        </Card>
       )}
 
-      <p className="mt-6 text-center text-xs text-neutral-500">
+      <p className="text-center text-xs text-neutral-500">
         Scheda pubblicata e visibile al cliente.
       </p>
     </>

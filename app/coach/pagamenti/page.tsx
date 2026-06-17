@@ -1,7 +1,16 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CreditCard, Receipt } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
+import {
+  Page,
+  BackLink,
+  PageHeader,
+  SectionLabel,
+  Card,
+  EmptyState,
+  Banner,
+} from "@/components/ui/kit";
 
 type ClientRow = { id: string; full_name: string };
 type SubRow = {
@@ -54,81 +63,75 @@ export default async function CoachPayments() {
   const payments = (payData ?? []) as PaymentRow[];
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
-      <Link
-        href="/coach"
-        className="text-sm text-neutral-400 hover:text-neutral-200"
-      >
-        ‹ Dashboard
-      </Link>
+    <Page>
+      <BackLink href="/coach">Dashboard</BackLink>
 
-      <header className="mt-4">
-        <h1 className="text-xl font-semibold">Pagamenti</h1>
-        <p className="mt-1 text-xs text-neutral-500">
-          Abbonamenti e incassi dei tuoi clienti.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Abbonamenti e incassi dei tuoi clienti"
+        title="Pagamenti"
+      />
 
-      <div className="mt-5 rounded-lg border border-sky-500/20 bg-sky-500/5 px-3 py-2.5 text-xs text-sky-300/90">
+      <Banner tone="info">
         Questa pagina si popola da sola quando colleghiamo <b>Stripe</b>. Per ora
         è la struttura, pronta a ricevere abbonamenti e pagamenti.
-      </div>
+      </Banner>
 
       {/* Abbonamenti */}
-      <section className="mt-8">
-        <h2 className="text-sm font-medium text-neutral-300">
-          Abbonamenti <span className="text-neutral-500">({subs.length})</span>
-        </h2>
-        <ul className="mt-3 flex flex-col gap-2">
-          {subs.length === 0 && (
-            <li className="rounded-lg border border-dashed border-neutral-800 px-3 py-6 text-center text-sm text-neutral-500">
-              Nessun abbonamento ancora.
-            </li>
-          )}
-          {subs.map((s) => (
-            <li
-              key={s.id}
-              className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/50 px-3 py-3"
-            >
-              <span className="font-medium">
-                {s.client_id ? clientName.get(s.client_id) ?? "Cliente" : "—"}
-              </span>
-              <span className="text-xs text-neutral-400">{s.status ?? "—"}</span>
-            </li>
-          ))}
-        </ul>
+      <section>
+        <SectionLabel right={<span className="text-xs text-neutral-500">{subs.length}</span>}>
+          Abbonamenti
+        </SectionLabel>
+        {subs.length === 0 ? (
+          <EmptyState icon={CreditCard}>Nessun abbonamento ancora.</EmptyState>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {subs.map((s) => (
+              <li key={s.id}>
+                <Card className="flex items-center justify-between">
+                  <span className="font-medium">
+                    {s.client_id ? clientName.get(s.client_id) ?? "Cliente" : "—"}
+                  </span>
+                  <span className="text-xs text-neutral-400">
+                    {s.status ?? "—"}
+                  </span>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {/* Pagamenti */}
-      <section className="mt-8">
-        <h2 className="text-sm font-medium text-neutral-300">
-          Pagamenti recenti{" "}
-          <span className="text-neutral-500">({payments.length})</span>
-        </h2>
-        <ul className="mt-3 flex flex-col gap-2">
-          {payments.length === 0 && (
-            <li className="rounded-lg border border-dashed border-neutral-800 px-3 py-6 text-center text-sm text-neutral-500">
-              Nessun pagamento ancora.
-            </li>
-          )}
-          {payments.map((p) => (
-            <li
-              key={p.id}
-              className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/50 px-3 py-3"
-            >
-              <span className="min-w-0">
-                <span className="block font-medium">
-                  {formatAmount(p.amount_cents, p.currency)}
-                </span>
-                <span className="block text-xs text-neutral-500">
-                  {p.client_id ? clientName.get(p.client_id) ?? "Cliente" : "—"}
-                </span>
-              </span>
-              <span className="text-xs text-neutral-400">{p.status ?? "—"}</span>
-            </li>
-          ))}
-        </ul>
+      <section>
+        <SectionLabel right={<span className="text-xs text-neutral-500">{payments.length}</span>}>
+          Pagamenti recenti
+        </SectionLabel>
+        {payments.length === 0 ? (
+          <EmptyState icon={Receipt}>Nessun pagamento ancora.</EmptyState>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {payments.map((p) => (
+              <li key={p.id}>
+                <Card className="flex items-center justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block font-medium">
+                      {formatAmount(p.amount_cents, p.currency)}
+                    </span>
+                    <span className="block truncate text-xs text-neutral-500">
+                      {p.client_id
+                        ? clientName.get(p.client_id) ?? "Cliente"
+                        : "—"}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-xs text-neutral-400">
+                    {p.status ?? "—"}
+                  </span>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
-    </main>
+    </Page>
   );
 }

@@ -11,10 +11,11 @@ import {
   ChevronRight,
   CircleCheck,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import { LogoutButton } from "@/components/LogoutButton";
+import { Page, PageHeader, SectionLabel, Card, IconTile } from "@/components/ui/kit";
 
 // Stati "bozza" di un artefatto: da rivedere/approvare (non ancora pubblicato).
 const PENDING = ["draft", "pending_review", "approved"];
@@ -41,6 +42,8 @@ export default async function CoachHome() {
   const { profile } = await getCurrentProfile();
   if (!profile) redirect("/");
   if (!isStaff(profile.role)) redirect("/cliente");
+
+  const firstName = profile.full_name?.split(" ")[0] ?? "";
 
   const supabase = await createClient();
 
@@ -122,13 +125,15 @@ export default async function CoachHome() {
       href: "/coach/checkin",
       icon: ClipboardCheck,
       title: "Check-in",
-      subtitle: checkinCount > 0 ? plural(checkinCount, "creato", "creati") : "Programma",
+      subtitle:
+        checkinCount > 0 ? plural(checkinCount, "creato", "creati") : "Programma",
     },
     {
       href: "/coach/nutrizione",
       icon: Salad,
       title: "Nutrizione",
-      subtitle: planCount > 0 ? plural(planCount, "piano", "piani") : "Crea un piano",
+      subtitle:
+        planCount > 0 ? plural(planCount, "piano", "piani") : "Crea un piano",
     },
     {
       href: "/coach/messaggi",
@@ -153,81 +158,76 @@ export default async function CoachHome() {
   ];
 
   return (
-    <main className="mx-auto flex min-h-full w-full max-w-md flex-col p-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-emerald-400">
-            Area Coach
-          </p>
-          <h1 className="text-lg font-semibold">
-            Ciao{profile.full_name ? `, ${profile.full_name}` : ""}
-          </h1>
-        </div>
-        <LogoutButton />
-      </header>
+    <Page>
+      <PageHeader
+        eyebrow="Area coach"
+        title={`Ciao${firstName ? `, ${firstName}` : ""}`}
+        action={<LogoutButton />}
+      />
 
       {/* Da fare */}
-      <section className="mt-6">
-        {todos.length > 0 ? (
-          <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-emerald-300">
-                Da fare
-              </span>
-              <span className="text-xs text-emerald-400/80">{todos.length}</span>
-            </div>
-            <ul className="mt-3 flex flex-col gap-2.5">
-              {todos.map((t) => (
-                <li key={t.label}>
-                  <Link
-                    href={t.href}
-                    className="flex items-center justify-between gap-3"
-                  >
-                    <span className="flex items-center gap-2.5 text-sm">
-                      <t.icon className="size-4 text-emerald-400" />
-                      {t.label}
-                    </span>
-                    <span className="flex items-center gap-2 text-neutral-400">
-                      <span className="font-medium text-neutral-200">
-                        {t.count}
-                      </span>
-                      <ChevronRight className="size-4" />
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+      {todos.length > 0 ? (
+        <Card tone="accent">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold">Da fare</span>
+            <span className="flex size-5 items-center justify-center rounded-full bg-accent/20 text-xs font-medium text-accent">
+              {todos.length}
+            </span>
           </div>
-        ) : (
-          <div className="flex items-center gap-2.5 rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4 text-sm text-neutral-400">
+          <ul className="mt-3 flex flex-col gap-3">
+            {todos.map((t) => (
+              <li key={t.label}>
+                <Link
+                  href={t.href}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <span className="flex items-center gap-2.5 text-sm">
+                    <t.icon className="size-4 text-accent" />
+                    {t.label}
+                  </span>
+                  <span className="flex items-center gap-2 text-neutral-400">
+                    <span className="font-semibold text-neutral-100">
+                      {t.count}
+                    </span>
+                    <ChevronRight className="size-4" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : (
+        <Card>
+          <div className="flex items-center gap-2.5 text-sm text-neutral-400">
             <CircleCheck className="size-4 text-emerald-400" />
             Nessuna azione in sospeso.
           </div>
-        )}
-      </section>
+        </Card>
+      )}
 
       {/* I tuoi clienti */}
       {clientList.length > 0 && (
-        <section className="mt-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-neutral-300">
-              I tuoi clienti
-            </h2>
-            <Link
-              href="/coach/clienti"
-              className="text-xs text-emerald-400 hover:text-emerald-300"
-            >
-              Tutti
-            </Link>
-          </div>
-          <ul className="mt-2 flex flex-col gap-1.5">
+        <section>
+          <SectionLabel
+            right={
+              <Link
+                href="/coach/clienti"
+                className="text-xs text-accent transition-colors hover:text-white"
+              >
+                Tutti
+              </Link>
+            }
+          >
+            I tuoi clienti
+          </SectionLabel>
+          <ul className="flex flex-col gap-1.5">
             {clientList.map((c) => (
               <li key={c.id}>
                 <Link
                   href={`/coach/clienti/${c.id}`}
-                  className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900/40 px-3 py-2.5 hover:border-neutral-700"
+                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5 transition-colors hover:border-white/20"
                 >
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs font-medium text-neutral-300">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-xs font-medium text-neutral-300">
                     {initials(c.full_name)}
                   </span>
                   <span className="flex-1 truncate text-sm">{c.full_name}</span>
@@ -239,36 +239,25 @@ export default async function CoachHome() {
         </section>
       )}
 
-      {/* Sezioni */}
-      <section className="mt-4 grid grid-cols-2 gap-3">
-        {sections.map((s) => (
-          <Link
-            key={s.title}
-            href={s.href ?? "#"}
-            className="flex flex-col rounded-2xl border border-neutral-800 bg-neutral-900/50 p-4 transition-colors hover:border-emerald-600/40"
-          >
-            <span
-              className={`flex size-10 items-center justify-center rounded-xl ${
-                s.muted
-                  ? "bg-white/5 text-neutral-400"
-                  : "bg-emerald-500/12 text-emerald-400"
-              }`}
-            >
-              <s.icon className="size-5" />
-            </span>
-            <span
-              className={`mt-3 font-medium ${
-                s.muted ? "text-neutral-300" : ""
-              }`}
-            >
-              {s.title}
-            </span>
-            <span className="mt-0.5 text-xs text-neutral-500">
-              {s.subtitle}
-            </span>
-          </Link>
-        ))}
+      {/* Strumenti */}
+      <section>
+        <SectionLabel>Strumenti</SectionLabel>
+        <div className="grid grid-cols-2 gap-3">
+          {sections.map((s) => (
+            <Card key={s.title} href={s.href ?? "#"} className="flex flex-col">
+              <IconTile icon={s.icon} tone={s.muted ? "muted" : "accent"} />
+              <span
+                className={`mt-3 font-medium ${s.muted ? "text-neutral-400" : ""}`}
+              >
+                {s.title}
+              </span>
+              <span className="mt-0.5 text-xs text-neutral-500">
+                {s.subtitle}
+              </span>
+            </Card>
+          ))}
+        </div>
       </section>
-    </main>
+    </Page>
   );
 }

@@ -1,3 +1,4 @@
+import { Dumbbell } from "@/components/ui/icons";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AnamnesisWizard } from "@/components/AnamnesisWizard";
 
@@ -27,7 +28,9 @@ export default async function OnboardingPage({
   if (!client || expired) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center p-6 text-center">
-        <h1 className="text-lg font-semibold">Link non valido</h1>
+        <h1 className="font-serif text-2xl font-medium tracking-tight">
+          Link non valido
+        </h1>
         <p className="mt-2 text-sm text-neutral-400">
           Questo link non è più attivo. Chiedi al tuo coach di inviartene uno
           nuovo.
@@ -49,12 +52,19 @@ export default async function OnboardingPage({
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
-      <header className="mb-6">
-        <p className="text-xs uppercase tracking-wide text-emerald-400">
-          Coach AI
-        </p>
-        <h1 className="mt-1 text-xl font-semibold">Ciao {firstName} 👋</h1>
-        <p className="mt-1 text-sm text-neutral-400">
+      <header className="mb-7">
+        <div className="flex items-center gap-2.5">
+          <span className="flex size-9 items-center justify-center rounded-2xl bg-accent text-accent-ink">
+            <Dumbbell className="size-5" aria-hidden="true" />
+          </span>
+          <span className="text-base font-semibold tracking-tight">
+            Coach AI
+          </span>
+        </div>
+        <h1 className="mt-6 font-serif text-3xl font-medium tracking-tight">
+          Ciao {firstName} 👋
+        </h1>
+        <p className="mt-2 text-sm text-neutral-400">
           Rispondi a qualche domanda: aiuteranno il tuo coach a costruire il
           programma su misura per te.
         </p>
@@ -62,7 +72,9 @@ export default async function OnboardingPage({
 
       {alreadyDone ? (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-6 text-center">
-          <h2 className="text-lg font-semibold">Già inviato ✅</h2>
+          <h2 className="text-lg font-semibold tracking-tight">
+            Già inviato ✅
+          </h2>
           <p className="mt-1 text-sm text-neutral-400">
             Hai già compilato il questionario. Il tuo coach sta lavorando al tuo
             programma.

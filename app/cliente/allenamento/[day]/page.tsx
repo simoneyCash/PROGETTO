@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Dumbbell } from "lucide-react";
+import { Dumbbell } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import { logWorkout } from "../../actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Page, BackLink, IconTile, Banner, btn } from "@/components/ui/kit";
 
 type Exercise = {
   exercise_name: string;
@@ -18,7 +19,7 @@ type ProgramContent = {
 };
 
 const inputClass =
-  "w-20 rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-2 text-center text-base outline-none focus:border-emerald-500";
+  "w-20 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-2 text-center text-base text-neutral-100 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent";
 
 export default async function LogWorkout({
   params,
@@ -51,35 +52,24 @@ export default async function LogWorkout({
   if (!d) notFound();
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
-      <Link
-        href="/cliente"
-        className="text-sm text-neutral-400 hover:text-neutral-200"
-      >
-        ‹ La tua scheda
-      </Link>
+    <Page>
+      <BackLink href="/cliente">La tua scheda</BackLink>
 
-      <header className="mt-4 flex items-center gap-3">
-        <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
-          <Dumbbell className="size-5" />
-        </span>
+      <header className="flex items-center gap-3">
+        <IconTile icon={Dumbbell} />
         <div>
-          <h1 className="text-xl font-semibold">{d.label}</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{d.label}</h1>
           <p className="text-sm text-neutral-500">{d.focus}</p>
         </div>
       </header>
 
-      <p className="mt-3 text-xs text-neutral-500">
+      <p className="-mt-3 text-xs text-neutral-500">
         Segna cosa hai fatto in ogni serie. Le serie vuote non vengono salvate.
       </p>
 
-      {error && (
-        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+      {error && <Banner tone="error">{error}</Banner>}
 
-      <form action={logWorkout} className="mt-5 flex flex-col gap-4">
+      <form action={logWorkout} className="flex flex-col gap-4">
         <input type="hidden" name="day" value={dayIndex} />
 
         {d.exercises?.map((ex, i) => {
@@ -87,10 +77,10 @@ export default async function LogWorkout({
           return (
             <div
               key={i}
-              className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-4"
+              className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
             >
               <div className="flex items-baseline justify-between gap-2">
-                <h2 className="font-medium">{ex.exercise_name}</h2>
+                <h2 className="font-semibold">{ex.exercise_name}</h2>
                 <span className="text-xs text-neutral-500">
                   target {ex.sets}×{ex.reps}
                 </span>
@@ -132,19 +122,21 @@ export default async function LogWorkout({
               </div>
 
               {ex.notes && (
-                <p className="mt-2 text-xs text-neutral-500">{ex.notes}</p>
+                <p className="mt-3 rounded-xl border border-accent/20 bg-accent/[0.06] px-3 py-2 text-sm text-neutral-200">
+                  {ex.notes}
+                </p>
               )}
             </div>
           );
         })}
 
-        <button
-          type="submit"
-          className="sticky bottom-4 mt-2 rounded-xl bg-emerald-600 px-4 py-3 font-medium text-white hover:bg-emerald-500"
+        <SubmitButton
+          className={`sticky bottom-4 mt-2 ${btn.primary}`}
+          pendingText="Salvataggio…"
         >
           Completa allenamento
-        </button>
+        </SubmitButton>
       </form>
-    </main>
+    </Page>
   );
 }

@@ -4,7 +4,10 @@ import { getSupabaseEnv } from "./env";
 
 // Rotte pubbliche (raggiungibili senza login).
 // /onboarding: l'anamnesi a link, compilata da un lead che non ha un account.
-const PUBLIC_PATHS = ["/login", "/onboarding"];
+// /api/onboarding: l'endpoint a cui il questionario invia le risposte (stesso
+// flusso senza account). Sicurezza garantita NON dal login ma dal token: la
+// rotta lo risolve lato server con la service role e timbra tenant_id dal record.
+const PUBLIC_PATHS = ["/login", "/onboarding", "/api/onboarding"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));

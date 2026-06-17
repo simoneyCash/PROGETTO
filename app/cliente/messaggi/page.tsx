@@ -1,8 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { MessageCircle } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import { sendClientMessage } from "./actions";
+import { Page, BackLink, PageHeader, EmptyState, Banner, btn, field } from "@/components/ui/kit";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 type Message = {
   id: string;
@@ -40,31 +42,19 @@ export default async function ClientMessages({
   const messages = (messagesData ?? []) as Message[];
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
-      <Link
-        href="/cliente"
-        className="text-sm text-neutral-400 hover:text-neutral-200"
-      >
-        ‹ La tua scheda
-      </Link>
+    <Page>
+      <BackLink href="/cliente">La tua scheda</BackLink>
 
-      <header className="mt-4">
-        <h1 className="text-xl font-semibold">Messaggi</h1>
-        <p className="text-sm text-neutral-500">Con il tuo coach</p>
-      </header>
+      <PageHeader title="Messaggi" eyebrow="Con il tuo coach" />
 
-      {error && (
-        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+      {error && <Banner tone="error">{error}</Banner>}
 
       {/* Thread */}
-      <section className="mt-6 flex flex-1 flex-col gap-3">
+      <section className="flex flex-1 flex-col gap-3">
         {messages.length === 0 && (
-          <p className="rounded-lg border border-dashed border-neutral-800 px-3 py-6 text-center text-sm text-neutral-500">
+          <EmptyState icon={MessageCircle}>
             Nessun messaggio. Scrivi il primo qui sotto.
-          </p>
+          </EmptyState>
         )}
         {messages.map((m) => {
           const mine = m.sender_role === "client";
@@ -73,8 +63,8 @@ export default async function ClientMessages({
               key={m.id}
               className={`max-w-[85%] rounded-2xl px-3 py-2 ${
                 mine
-                  ? "self-end bg-emerald-600/20 text-emerald-50"
-                  : "self-start bg-neutral-800 text-neutral-100"
+                  ? "self-end bg-accent text-accent-ink"
+                  : "self-start bg-white/5 text-neutral-200"
               }`}
             >
               {!mine && (
@@ -83,7 +73,11 @@ export default async function ClientMessages({
                 </p>
               )}
               <p className="whitespace-pre-wrap text-sm">{m.body}</p>
-              <p className="mt-1 text-[10px] text-neutral-400">
+              <p
+                className={`mt-1 text-[10px] ${
+                  mine ? "text-accent-ink/65" : "text-neutral-500"
+                }`}
+              >
                 {formatTime(m.created_at)}
               </p>
             </div>
@@ -92,21 +86,18 @@ export default async function ClientMessages({
       </section>
 
       {/* Composer */}
-      <form action={sendClientMessage} className="mt-4 flex gap-2">
+      <form action={sendClientMessage} className="flex gap-2">
         <input
           name="body"
           required
           autoComplete="off"
           placeholder="Scrivi al coach…"
-          className="flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-base outline-none focus:border-emerald-500"
+          className={`flex-1 ${field}`}
         />
-        <button
-          type="submit"
-          className="rounded-lg bg-emerald-600 px-4 py-2.5 font-medium text-white hover:bg-emerald-500"
-        >
+        <SubmitButton className={btn.primary} pendingText="Invio…">
           Invia
-        </button>
+        </SubmitButton>
       </form>
-    </main>
+    </Page>
   );
 }

@@ -1,24 +1,35 @@
 @import "tailwindcss";
 
-/* Dark-mode-first: a `dark` class on <html> opts in to the dark theme.
-   We keep a class-based variant so a light theme can be added later
-   without touching the markup. */
+/* Dark-mode-first: a `dark` class on <html> opts in to the dark theme. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  /* "Premium App UI": superficie near-black, accento oro, testo bianco. */
+  --background: #050605;
+  --foreground: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+
+  /* Accento di marca: ORO champagne. `accent` = oro (testo/icone/attivo e
+     fondo dei pulsanti pieni); `accent-ink` = testo scuro SU oro; `lime` =
+     terziario, usato raramente per contrasti di supporto. */
+  --color-accent: #e7bf70;
+  --color-accent-light: #f8dda2; /* alto del gradiente sui pulsanti */
+  --color-accent-strong: #e7bf70;
+  --color-accent-ink: #18130c;
+  --color-lime: #c1ed74;
+
+  /* Tipografia: titoli serif (Georgia), corpo/etichette sans di sistema
+     (= SF Pro su iPhone/Mac). Nessun font esterno da scaricare. */
+  --font-sans: -apple-system, system-ui, "SF Pro Display", "Segoe UI", Roboto,
     Helvetica, Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
 }
 
 html {
-  /* Force the dark color scheme for native form controls / scrollbars. */
   color-scheme: dark;
 }
 
@@ -28,4 +39,10 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Tocco di marca discreto: selezione del testo in oro. */
+::selection {
+  background: rgba(231, 191, 112, 0.3);
+  color: #fff;
 }

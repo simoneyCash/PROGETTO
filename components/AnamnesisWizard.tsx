@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check } from "@/components/ui/icons";
+import { btn, field } from "@/components/ui/kit";
 
 type Field = {
   name: string;
@@ -62,9 +63,6 @@ const STEPS: Step[] = [
   },
 ];
 
-const fieldClass =
-  "w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-base outline-none focus:border-emerald-500";
-
 export function AnamnesisWizard({
   token,
   clientName,
@@ -112,7 +110,9 @@ export function AnamnesisWizard({
         <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-500/15">
           <Check className="size-6 text-emerald-400" />
         </span>
-        <h2 className="mt-3 text-lg font-semibold">Grazie, {firstName}!</h2>
+        <h2 className="mt-3 text-lg font-semibold tracking-tight">
+          Grazie, {firstName}!
+        </h2>
         <p className="mt-1 text-sm text-neutral-400">
           Il tuo coach ha ricevuto le risposte e preparerà il programma su misura
           per te.
@@ -128,7 +128,7 @@ export function AnamnesisWizard({
           <span
             key={i}
             className={`h-1.5 flex-1 rounded-full ${
-              i <= step ? "bg-emerald-500" : "bg-neutral-800"
+              i <= step ? "bg-accent" : "bg-white/10"
             }`}
           />
         ))}
@@ -136,9 +136,11 @@ export function AnamnesisWizard({
       <p className="mt-3 text-xs text-neutral-500">
         Passo {step + 1} di {STEPS.length}
       </p>
-      <h2 className="mt-1 text-xl font-semibold">{current.title}</h2>
+      <h2 className="mt-1 text-xl font-semibold tracking-tight">
+        {current.title}
+      </h2>
       {current.note && (
-        <p className="mt-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
+        <p className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
           {current.note}
         </p>
       )}
@@ -146,17 +148,17 @@ export function AnamnesisWizard({
       <div className="mt-4 flex flex-col gap-4">
         {current.fields.map((f) => (
           <label key={f.name} className="flex flex-col gap-1.5 text-sm">
-            <span className="text-neutral-300">{f.label}</span>
+            <span className="font-medium text-neutral-300">{f.label}</span>
             {f.type === "textarea" ? (
               <textarea
                 rows={2}
-                className={fieldClass}
+                className={field}
                 value={values[f.name] ?? ""}
                 onChange={(e) => set(f.name, e.target.value)}
               />
             ) : f.type === "select" ? (
               <select
-                className={fieldClass}
+                className={field}
                 value={values[f.name] ?? ""}
                 onChange={(e) => set(f.name, e.target.value)}
               >
@@ -170,7 +172,7 @@ export function AnamnesisWizard({
               <input
                 type={f.type}
                 placeholder={f.placeholder}
-                className={fieldClass}
+                className={field}
                 value={values[f.name] ?? ""}
                 onChange={(e) => set(f.name, e.target.value)}
               />
@@ -180,7 +182,7 @@ export function AnamnesisWizard({
       </div>
 
       {error && (
-        <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+        <p className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-300">
           {error}
         </p>
       )}
@@ -190,7 +192,7 @@ export function AnamnesisWizard({
           <button
             type="button"
             onClick={() => setStep((s) => s - 1)}
-            className="flex-1 rounded-lg border border-neutral-700 px-4 py-3 text-sm font-medium text-neutral-200 hover:bg-neutral-800"
+            className={`${btn.secondary} flex-1`}
           >
             Indietro
           </button>
@@ -199,7 +201,7 @@ export function AnamnesisWizard({
           <button
             type="button"
             onClick={() => setStep((s) => s + 1)}
-            className="flex-1 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white hover:bg-emerald-500"
+            className={`${btn.primary} flex-1`}
           >
             Avanti
           </button>
@@ -208,7 +210,7 @@ export function AnamnesisWizard({
             type="button"
             onClick={submit}
             disabled={submitting}
-            className="flex-1 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            className={`${btn.primary} flex-1`}
           >
             {submitting ? "Invio…" : "Invia"}
           </button>

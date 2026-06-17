@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
+import { ArrowUp, ArrowDown, X, Plus, TriangleAlert } from "@/components/ui/icons";
 import { saveProgramVersion } from "@/app/coach/actions";
+import { btn } from "@/components/ui/kit";
 
 type Exercise = {
   exercise_id: string;
@@ -92,22 +94,28 @@ export function ProgramEditor({
       };
     });
 
+  // Variante compatta del campo del kit (stesso stile, padding ridotto per
+  // l'editor fitto): bordo white/10, focus viola (text-base evita lo zoom iOS).
   const field =
-    "rounded-lg border border-neutral-800 bg-neutral-900/60 px-3 py-2 text-sm";
+    "w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-base text-neutral-100 outline-none transition-colors placeholder:text-neutral-600 focus:border-accent focus:ring-1 focus:ring-accent";
 
   return (
-    <form action={saveProgramVersion} className="mt-4 flex flex-col gap-4 pb-6">
+    <form action={saveProgramVersion} className="flex flex-col gap-4 pb-6">
       <input type="hidden" name="version_id" value={versionId} />
       <input type="hidden" name="content" value={JSON.stringify(content)} />
 
       <div className="flex flex-col gap-2">
-        <label className="text-xs uppercase tracking-wide text-neutral-500">Titolo</label>
+        <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+          Titolo
+        </label>
         <input
           value={content.title}
           onChange={(e) => setContent((c) => ({ ...c, title: e.target.value }))}
-          className={`${field} text-base font-semibold`}
+          className={`${field} font-semibold`}
         />
-        <label className="mt-1 text-xs uppercase tracking-wide text-neutral-500">Sintesi</label>
+        <label className="mt-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
+          Sintesi
+        </label>
         <textarea
           value={content.summary}
           onChange={(e) => setContent((c) => ({ ...c, summary: e.target.value }))}
@@ -118,7 +126,10 @@ export function ProgramEditor({
 
       {content.health_flags.length > 0 && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
-          <p className="text-sm font-medium text-amber-300">⚠️ Da verificare (salute)</p>
+          <p className="flex items-center gap-2 text-sm font-medium text-amber-300">
+            <TriangleAlert className="size-4" />
+            Da verificare (salute)
+          </p>
           <ul className="mt-1 list-disc pl-5 text-sm text-amber-200/90">
             {content.health_flags.map((f, i) => (
               <li key={i}>{f}</li>
@@ -128,7 +139,7 @@ export function ProgramEditor({
       )}
 
       {content.days.map((day, di) => (
-        <div key={di} className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-4">
+        <div key={di} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
               value={day.label}
@@ -146,12 +157,12 @@ export function ProgramEditor({
 
           <div className="mt-3 flex flex-col gap-3">
             {day.exercises.map((ex, ei) => (
-              <div key={ei} className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-3">
+              <div key={ei} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
                 <div className="flex items-center gap-2">
                   <select
                     value={ex.exercise_id}
                     onChange={(e) => setExercise(di, ei, { exercise_id: e.target.value })}
-                    className="min-w-0 flex-1 rounded-lg border border-neutral-800 bg-neutral-900 px-2 py-2 text-sm"
+                    className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm text-neutral-100 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
                   >
                     {!exercises.some((l) => l.id === ex.exercise_id) && (
                       <option value={ex.exercise_id}>
@@ -169,25 +180,25 @@ export function ProgramEditor({
                       type="button"
                       onClick={() => moveExercise(di, ei, -1)}
                       aria-label="Sposta su"
-                      className="rounded-md border border-neutral-700 px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-800"
+                      className="rounded-lg border border-white/10 p-2 text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-200"
                     >
-                      ↑
+                      <ArrowUp className="size-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => moveExercise(di, ei, 1)}
                       aria-label="Sposta giù"
-                      className="rounded-md border border-neutral-700 px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-800"
+                      className="rounded-lg border border-white/10 p-2 text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-200"
                     >
-                      ↓
+                      <ArrowDown className="size-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => removeExercise(di, ei)}
                       aria-label="Rimuovi esercizio"
-                      className="rounded-md border border-red-800/60 px-2 py-1 text-xs text-red-300 hover:bg-red-900/30"
+                      className="rounded-lg border border-red-500/30 p-2 text-red-300 transition-colors hover:bg-red-500/10"
                     >
-                      ✕
+                      <X className="size-4" />
                     </button>
                   </div>
                 </div>
@@ -201,7 +212,7 @@ export function ProgramEditor({
                       max={99}
                       value={ex.sets}
                       onChange={(e) => setExercise(di, ei, { sets: Number(e.target.value) })}
-                      className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-sm"
+                      className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-neutral-100 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
                     />
                   </label>
                   <label className="flex flex-col gap-1">
@@ -209,7 +220,7 @@ export function ProgramEditor({
                     <input
                       value={ex.reps}
                       onChange={(e) => setExercise(di, ei, { reps: e.target.value })}
-                      className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-sm"
+                      className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-neutral-100 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
                     />
                   </label>
                   <label className="flex flex-col gap-1">
@@ -222,7 +233,7 @@ export function ProgramEditor({
                       onChange={(e) =>
                         setExercise(di, ei, { rest_seconds: Number(e.target.value) })
                       }
-                      className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-sm"
+                      className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-neutral-100 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
                     />
                   </label>
                 </div>
@@ -231,7 +242,7 @@ export function ProgramEditor({
                   value={ex.notes}
                   onChange={(e) => setExercise(di, ei, { notes: e.target.value })}
                   placeholder="Note (tecnica, tempo, cues…)"
-                  className="mt-2 w-full rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-xs text-neutral-300"
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-xs text-neutral-300 outline-none transition-colors placeholder:text-neutral-600 focus:border-accent focus:ring-1 focus:ring-accent"
                 />
               </div>
             ))}
@@ -240,16 +251,17 @@ export function ProgramEditor({
               type="button"
               onClick={() => addExercise(di)}
               disabled={exercises.length === 0}
-              className="rounded-lg border border-dashed border-neutral-700 px-3 py-2 text-sm text-neutral-400 hover:bg-neutral-800 disabled:opacity-40"
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 px-3 py-2.5 text-sm text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-200 disabled:opacity-40"
             >
-              + Aggiungi esercizio
+              <Plus className="size-4" />
+              Aggiungi esercizio
             </button>
           </div>
         </div>
       ))}
 
       <div className="flex flex-col gap-2">
-        <label className="text-xs uppercase tracking-wide text-neutral-500">
+        <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
           Note per il coach (private)
         </label>
         <textarea
@@ -270,14 +282,14 @@ export function ProgramEditor({
 function EditorActions() {
   const { pending } = useFormStatus();
   return (
-    <div className="sticky bottom-0 z-10 -mx-6 mt-2 border-t border-neutral-800 bg-neutral-950/95 px-6 py-3 backdrop-blur">
+    <div className="sticky bottom-0 z-10 -mx-6 mt-2 border-t border-white/10 bg-neutral-950/95 px-6 py-3 backdrop-blur">
       <div className="flex w-full gap-2">
         <button
           type="submit"
           name="intent"
           value="save"
           disabled={pending}
-          className="flex-1 rounded-lg border border-neutral-700 px-4 py-3 text-sm font-medium text-neutral-200 hover:bg-neutral-800 disabled:opacity-50"
+          className={`${btn.secondary} flex-1`}
         >
           {pending ? "Salvataggio…" : "Salva modifiche"}
         </button>
@@ -286,7 +298,7 @@ function EditorActions() {
           name="intent"
           value="publish"
           disabled={pending}
-          className="flex-1 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+          className={`${btn.primary} flex-1`}
         >
           {pending ? "Attendi…" : "Approva e pubblica"}
         </button>

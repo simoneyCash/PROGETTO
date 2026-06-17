@@ -1,7 +1,9 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
+import { Page, BackLink, PageHeader, EmptyState, btn, field } from "@/components/ui/kit";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { MessageCircle } from "@/components/ui/icons";
 import { sendMessage } from "../actions";
 
 type Message = {
@@ -47,38 +49,35 @@ export default async function CoachThread({
   const messages = (messagesData ?? []) as Message[];
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
-      <Link
-        href="/coach/messaggi"
-        className="text-sm text-neutral-400 hover:text-neutral-200"
-      >
-        ‹ Conversazioni
-      </Link>
+    <Page>
+      <BackLink href="/coach/messaggi">Conversazioni</BackLink>
 
-      <header className="mt-4">
-        <h1 className="text-xl font-semibold">{client.full_name}</h1>
-      </header>
+      <PageHeader title={client.full_name} />
 
       {/* Thread */}
-      <section className="mt-6 flex flex-1 flex-col gap-3">
+      <section className="flex flex-1 flex-col gap-3">
         {messages.length === 0 && (
-          <p className="rounded-lg border border-dashed border-neutral-800 px-3 py-6 text-center text-sm text-neutral-500">
+          <EmptyState icon={MessageCircle}>
             Nessun messaggio. Scrivi il primo qui sotto.
-          </p>
+          </EmptyState>
         )}
         {messages.map((m) => {
           const fromStaff = m.sender_role === "coach" || m.sender_role === "admin";
           return (
             <div
               key={m.id}
-              className={`max-w-[85%] rounded-2xl px-3 py-2 ${
+              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${
                 fromStaff
-                  ? "self-end bg-emerald-600/20 text-emerald-50"
-                  : "self-start bg-neutral-800 text-neutral-100"
+                  ? "self-end bg-accent text-accent-ink"
+                  : "self-start bg-white/5 text-neutral-200"
               }`}
             >
               <p className="whitespace-pre-wrap text-sm">{m.body}</p>
-              <p className="mt-1 text-[10px] text-neutral-400">
+              <p
+                className={`mt-1 text-[10px] ${
+                  fromStaff ? "text-accent-ink/65" : "text-neutral-500"
+                }`}
+              >
                 {formatTime(m.created_at)}
               </p>
             </div>
@@ -87,22 +86,19 @@ export default async function CoachThread({
       </section>
 
       {/* Composer */}
-      <form action={sendMessage} className="mt-4 flex gap-2">
+      <form action={sendMessage} className="flex gap-2">
         <input type="hidden" name="client_id" value={client.id} />
         <input
           name="body"
           required
           autoComplete="off"
           placeholder="Scrivi un messaggio…"
-          className="flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-base outline-none focus:border-emerald-500"
+          className={`${field} flex-1`}
         />
-        <button
-          type="submit"
-          className="rounded-lg bg-emerald-600 px-4 py-2.5 font-medium text-white hover:bg-emerald-500"
-        >
+        <SubmitButton className={btn.primary} pendingText="Invio…">
           Invia
-        </button>
+        </SubmitButton>
       </form>
-    </main>
+    </Page>
   );
 }

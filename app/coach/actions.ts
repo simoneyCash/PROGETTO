@@ -85,12 +85,13 @@ export async function saveIntake(formData: FormData) {
 
   if (error) {
     redirect(
-      `/coach/clienti/${clientId}?error=` + encodeURIComponent(error.message),
+      `/coach/clienti/${clientId}?tab=anamnesi&error=` +
+        encodeURIComponent(error.message),
     );
   }
 
   revalidatePath(`/coach/clienti/${clientId}`);
-  redirect(`/coach/clienti/${clientId}?saved=1`);
+  redirect(`/coach/clienti/${clientId}?tab=anamnesi&saved=1`);
 }
 
 // Chiama la Edge Function che genera la BOZZA di scheda con l'AI.
@@ -114,13 +115,14 @@ export async function generateProgramDraft(formData: FormData) {
 
   if (error) {
     redirect(
-      `/coach/clienti/${clientId}?error=` +
+      `/coach/clienti/${clientId}?tab=scheda&error=` +
         encodeURIComponent("Generazione AI non riuscita: " + error.message),
     );
   }
   if (data?.error) {
     redirect(
-      `/coach/clienti/${clientId}?error=` + encodeURIComponent(data.error),
+      `/coach/clienti/${clientId}?tab=scheda&error=` +
+        encodeURIComponent(data.error),
     );
   }
 
@@ -202,12 +204,13 @@ export async function createIntakeLink(formData: FormData) {
     .eq("tenant_id", profile.tenant_id); // difesa in profondità oltre alla RLS
   if (error) {
     redirect(
-      `/coach/clienti/${clientId}?error=` + encodeURIComponent(error.message),
+      `/coach/clienti/${clientId}?tab=anamnesi&error=` +
+        encodeURIComponent(error.message),
     );
   }
 
   revalidatePath(`/coach/clienti/${clientId}`);
-  redirect(`/coach/clienti/${clientId}?invite=1`);
+  redirect(`/coach/clienti/${clientId}?tab=anamnesi&invite=1`);
 }
 
 // Salva le modifiche del coach a una bozza di scheda. Con intent="publish"

@@ -80,10 +80,23 @@ export async function POST(
 
   const { data: existing } = await admin
     .from("intakes")
-    .select("id")
+    .select("id, submitted_at")
     .eq("client_id", client.id)
     .limit(1)
     .maybeSingle();
+
+  // Difesa anti-abuso: una volta inviato, il questionario non si può
+  // sovrascrivere via API (un link trapelato non può manomettere l'anamnesi
+  // già compilata). Per correggere, il coach rigenera un nuovo link.
+  if (existing?.submitted_at) {
+    return NextResponse.json(
+      {
+        error:
+          "Questionario già inviato. Per modifiche, chiedi un nuovo link al coach.",
+      },
+      { status: 409 },
+    );
+  }
 
   const result = existing
     ? await admin

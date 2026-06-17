@@ -1,8 +1,20 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Users } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import { addClient } from "../actions";
+import {
+  Page,
+  PageHeader,
+  BackLink,
+  SectionLabel,
+  Card,
+  EmptyState,
+  Banner,
+  btn,
+  field,
+} from "@/components/ui/kit";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 type ClientRow = {
   id: string;
@@ -31,80 +43,71 @@ export default async function CoachClients({
   const list = (clients ?? []) as ClientRow[];
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
-      <Link
-        href="/coach"
-        className="text-sm text-neutral-400 hover:text-neutral-200"
-      >
-        ‹ Dashboard
-      </Link>
+    <Page>
+      <BackLink href="/coach">Dashboard</BackLink>
 
-      <header className="mt-4">
-        <h1 className="text-xl font-semibold">Clienti</h1>
-      </header>
+      <PageHeader eyebrow="Area coach" title="Clienti" />
 
       {/* Nuovo cliente */}
-      <section className="mt-8">
-        <h2 className="text-sm font-medium text-neutral-300">Nuovo cliente</h2>
-        <form action={addClient} className="mt-3 flex flex-col gap-3">
-          {error && (
-            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-              {error}
-            </p>
-          )}
+      <section>
+        <SectionLabel>Nuovo cliente</SectionLabel>
+        <form action={addClient} className="flex flex-col gap-3">
+          {error && <Banner tone="error">{error}</Banner>}
           <input
             name="full_name"
             placeholder="Nome e cognome"
             required
-            className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-base outline-none focus:border-emerald-500"
+            className={field}
           />
           <input
             name="email"
             type="email"
             placeholder="Email (opzionale)"
-            className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-base outline-none focus:border-emerald-500"
+            className={field}
           />
-          <button
-            type="submit"
-            className="rounded-lg bg-emerald-600 px-4 py-2.5 font-medium text-white hover:bg-emerald-500"
-          >
+          <SubmitButton className={btn.primary} pendingText="Aggiungo…">
             Aggiungi cliente
-          </button>
+          </SubmitButton>
         </form>
       </section>
 
       {/* Lista clienti */}
-      <section className="mt-8">
-        <h2 className="text-sm font-medium text-neutral-300">
+      <section>
+        <SectionLabel>
           I tuoi clienti{" "}
           <span className="text-neutral-500">({list.length})</span>
-        </h2>
-        <ul className="mt-3 flex flex-col gap-2">
-          {list.length === 0 && (
-            <li className="rounded-lg border border-dashed border-neutral-800 px-3 py-6 text-center text-sm text-neutral-500">
-              Nessun cliente ancora. Aggiungine uno qui sopra.
-            </li>
-          )}
-          {list.map((c) => (
-            <li key={c.id}>
-              <Link
-                href={`/coach/clienti/${c.id}`}
-                className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/50 px-3 py-3 transition-colors hover:border-neutral-700"
-              >
-                <span>
-                  <span className="block font-medium">{c.full_name}</span>
-                  {c.email && (
-                    <span className="block text-xs text-neutral-500">
-                      {c.email}
+        </SectionLabel>
+        {list.length === 0 ? (
+          <EmptyState icon={Users}>
+            Nessun cliente ancora. Aggiungine uno qui sopra.
+          </EmptyState>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {list.map((c) => (
+              <li key={c.id}>
+                <Card
+                  href={`/coach/clienti/${c.id}`}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">
+                      {c.full_name}
                     </span>
-                  )}
-                </span>
-                <span className="text-xs text-neutral-500">{c.status} ›</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                    {c.email && (
+                      <span className="block truncate text-xs text-neutral-500">
+                        {c.email}
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 text-xs text-neutral-500">
+                    {c.status} ›
+                  </span>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
-    </main>
+    </Page>
   );
 }

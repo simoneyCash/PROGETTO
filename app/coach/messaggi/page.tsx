@@ -1,10 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { MessageCircle, ChevronRight } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
+import { Page, BackLink, PageHeader, EmptyState } from "@/components/ui/kit";
 
 type ClientRow = { id: string; full_name: string };
 type MessageRow = { client_id: string; body: string; created_at: string };
+
+// Iniziali per l'avatar (max 2 lettere).
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("") || "?";
 
 export default async function CoachMessages() {
   const { profile } = await getCurrentProfile();
@@ -31,54 +42,54 @@ export default async function CoachMessages() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
-      <Link
-        href="/coach"
-        className="text-sm text-neutral-400 hover:text-neutral-200"
-      >
-        ‹ Dashboard
-      </Link>
+    <Page>
+      <BackLink href="/coach">Dashboard</BackLink>
 
-      <header className="mt-4">
-        <h1 className="text-xl font-semibold">Messaggi</h1>
-        <p className="mt-1 text-xs text-neutral-500">
-          Conversazioni con i tuoi clienti. (Il cliente potrà rispondere dal suo
-          portale, in arrivo.)
-        </p>
-      </header>
+      <PageHeader title="Messaggi" />
 
-      <section className="mt-6">
-        <ul className="flex flex-col gap-2">
-          {clients.length === 0 && (
-            <li className="rounded-lg border border-dashed border-neutral-800 px-3 py-6 text-center text-sm text-neutral-500">
-              Aggiungi prima un cliente in{" "}
-              <Link href="/coach/clienti" className="text-emerald-400 underline">
-                Clienti
-              </Link>
-              .
-            </li>
-          )}
-          {clients.map((c) => {
-            const last = lastByClient.get(c.id);
-            return (
-              <li key={c.id}>
-                <Link
-                  href={`/coach/messaggi/${c.id}`}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/50 px-3 py-3 transition-colors hover:border-neutral-700"
-                >
-                  <span className="min-w-0">
-                    <span className="block font-medium">{c.full_name}</span>
-                    <span className="block truncate text-xs text-neutral-500">
-                      {last ? last.body : "Nessun messaggio"}
+      <p className="-mt-4 text-xs text-neutral-500">
+        Conversazioni con i tuoi clienti. (Il cliente potrà rispondere dal suo
+        portale, in arrivo.)
+      </p>
+
+      <section>
+        {clients.length === 0 ? (
+          <EmptyState icon={MessageCircle}>
+            Aggiungi prima un cliente in{" "}
+            <Link href="/coach/clienti" className="text-accent underline">
+              Clienti
+            </Link>
+            .
+          </EmptyState>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {clients.map((c) => {
+              const last = lastByClient.get(c.id);
+              return (
+                <li key={c.id}>
+                  <Link
+                    href={`/coach/messaggi/${c.id}`}
+                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5 transition-colors hover:border-white/20"
+                  >
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-xs font-medium text-neutral-300">
+                      {initials(c.full_name)}
                     </span>
-                  </span>
-                  <span className="shrink-0 text-xs text-neutral-500">›</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">
+                        {c.full_name}
+                      </span>
+                      <span className="block truncate text-xs text-neutral-500">
+                        {last ? last.body : "Nessun messaggio"}
+                      </span>
+                    </span>
+                    <ChevronRight className="size-4 shrink-0 text-neutral-600" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
-    </main>
+    </Page>
   );
 }

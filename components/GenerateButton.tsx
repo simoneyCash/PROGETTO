@@ -1,6 +1,8 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
+import { Sparkles } from "@/components/ui/icons";
+import { btn } from "@/components/ui/kit";
 
 // Pulsante "Genera bozza" con feedback di caricamento: mentre la server action
 // gira (~30s) mostra una rotella e "Generazione in corso…", e si disabilita per
@@ -13,12 +15,12 @@ export function GenerateButton({ disabled }: { disabled?: boolean }) {
       type="submit"
       disabled={disabled || pending}
       aria-busy={pending}
-      className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-600/40 bg-emerald-600/10 px-4 py-2.5 font-medium text-emerald-300 hover:bg-emerald-600/20 disabled:cursor-not-allowed disabled:opacity-50"
+      className={`${btn.primary} w-full disabled:cursor-not-allowed`}
     >
       {pending ? (
         <>
           <svg
-            className="h-4 w-4 animate-spin"
+            className="size-4 animate-spin"
             viewBox="0 0 24 24"
             fill="none"
             aria-hidden="true"
@@ -40,7 +42,10 @@ export function GenerateButton({ disabled }: { disabled?: boolean }) {
           Generazione in corso…
         </>
       ) : (
-        "✨ Genera bozza con l'AI"
+        <>
+          <Sparkles className="size-4" />
+          Genera bozza con l&apos;AI
+        </>
       )}
     </button>
   );
