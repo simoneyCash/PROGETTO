@@ -19,6 +19,15 @@ import { LogoutButton } from "@/components/LogoutButton";
 // Stati "bozza" di un artefatto: da rivedere/approvare (non ancora pubblicato).
 const PENDING = ["draft", "pending_review", "approved"];
 
+// Iniziali per l'avatar (max 2 lettere).
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("") || "?";
+
 type Section = {
   href?: string;
   icon: LucideIcon;
@@ -43,6 +52,7 @@ export default async function CoachHome() {
     pendingProgramsRes,
     pendingPlansRes,
     answeredCheckinsRes,
+    clientsListRes,
   ] = await Promise.all([
     supabase.from("clients").select("id", { count: "exact", head: true }),
     supabase.from("checkins").select("id", { count: "exact", head: true }),
@@ -59,6 +69,11 @@ export default async function CoachHome() {
       .from("checkins")
       .select("id", { count: "exact", head: true })
       .eq("status", "answered"),
+    supabase
+      .from("clients")
+      .select("id, full_name")
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
 
   const clientCount = clientsRes.count ?? 0;
@@ -67,6 +82,10 @@ export default async function CoachHome() {
   const pendingPrograms = pendingProgramsRes.count ?? 0;
   const pendingPlans = pendingPlansRes.count ?? 0;
   const answeredCheckins = answeredCheckinsRes.count ?? 0;
+  const clientList = (clientsListRes.data ?? []) as {
+    id: string;
+    full_name: string;
+  }[];
 
   const todos: Todo[] = [
     pendingPrograms > 0 && {
@@ -134,7 +153,7 @@ export default async function CoachHome() {
   ];
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
+    <main className="mx-auto flex min-h-full w-full max-w-md flex-col p-6">
       <header className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-emerald-400">
@@ -186,6 +205,39 @@ export default async function CoachHome() {
           </div>
         )}
       </section>
+
+      {/* I tuoi clienti */}
+      {clientList.length > 0 && (
+        <section className="mt-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-neutral-300">
+              I tuoi clienti
+            </h2>
+            <Link
+              href="/coach/clienti"
+              className="text-xs text-emerald-400 hover:text-emerald-300"
+            >
+              Tutti
+            </Link>
+          </div>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {clientList.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/coach/clienti/${c.id}`}
+                  className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900/40 px-3 py-2.5 hover:border-neutral-700"
+                >
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs font-medium text-neutral-300">
+                    {initials(c.full_name)}
+                  </span>
+                  <span className="flex-1 truncate text-sm">{c.full_name}</span>
+                  <ChevronRight className="size-4 text-neutral-600" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Sezioni */}
       <section className="mt-4 grid grid-cols-2 gap-3">

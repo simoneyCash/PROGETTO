@@ -96,7 +96,7 @@ export function ProgramEditor({
     "rounded-lg border border-neutral-800 bg-neutral-900/60 px-3 py-2 text-sm";
 
   return (
-    <form action={saveProgramVersion} className="mt-4 flex flex-col gap-4 pb-28">
+    <form action={saveProgramVersion} className="mt-4 flex flex-col gap-4 pb-6">
       <input type="hidden" name="version_id" value={versionId} />
       <input type="hidden" name="content" value={JSON.stringify(content)} />
 
@@ -270,8 +270,8 @@ export function ProgramEditor({
 function EditorActions() {
   const { pending } = useFormStatus();
   return (
-    <div className="fixed inset-x-0 bottom-0 z-10 border-t border-neutral-800 bg-neutral-950/95 p-3 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-md gap-2">
+    <div className="sticky bottom-0 z-10 -mx-6 mt-2 border-t border-neutral-800 bg-neutral-950/95 px-6 py-3 backdrop-blur">
+      <div className="flex w-full gap-2">
         <button
           type="submit"
           name="intent"
