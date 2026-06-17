@@ -14,7 +14,9 @@ export async function addClient(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
 
   if (!full_name) {
-    redirect("/coach?error=" + encodeURIComponent("Il nome è obbligatorio"));
+    redirect(
+      "/coach/clienti?error=" + encodeURIComponent("Il nome è obbligatorio"),
+    );
   }
 
   const supabase = await createServerSupabase();
@@ -27,11 +29,11 @@ export async function addClient(formData: FormData) {
   });
 
   if (error) {
-    redirect("/coach?error=" + encodeURIComponent(error.message));
+    redirect("/coach/clienti?error=" + encodeURIComponent(error.message));
   }
 
-  revalidatePath("/coach");
-  redirect("/coach");
+  revalidatePath("/coach/clienti");
+  redirect("/coach/clienti");
 }
 
 // Salva (crea o aggiorna) il questionario di intake di un cliente.
