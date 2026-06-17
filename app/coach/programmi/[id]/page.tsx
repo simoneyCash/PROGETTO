@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
-import { approveProgramVersion } from "../../actions";
+import { ProgramEditor } from "@/components/ProgramEditor";
 
 type Exercise = {
   exercise_id: string;
@@ -33,14 +33,14 @@ export default async function ProgramReview({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ published?: string; error?: string }>;
+  searchParams: Promise<{ published?: string; saved?: string; error?: string }>;
 }) {
   const { profile } = await getCurrentProfile();
   if (!profile) redirect("/");
   if (!isStaff(profile.role)) redirect("/cliente");
 
   const { id } = await params;
-  const { published, error } = await searchParams;
+  const { published, saved, error } = await searchParams;
 
   const supabase = await createClient();
   const { data: version } = await supabase
@@ -57,7 +57,19 @@ export default async function ProgramReview({
     .maybeSingle();
 
   const c = version.content as ProgramContent;
-  const isPublished = version.status === "published";
+  const isEditable = !["published", "archived"].includes(version.status);
+
+  // Libreria esercizi del tenant per il menu a tendina dell'editor (grounding).
+  let exercises: { id: string; name: string; muscle_group: string | null }[] = [];
+  if (isEditable) {
+    const { data } = await supabase
+      .from("exercises")
+      .select("id, name, muscle_group")
+      .eq("tenant_id", profile.tenant_id)
+      .eq("is_active", true)
+      .order("name");
+    exercises = data ?? [];
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
@@ -68,25 +80,25 @@ export default async function ProgramReview({
         ‹ {client?.full_name ?? "Cliente"}
       </Link>
 
-      <header className="mt-4 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{c.title}</h1>
-          <p className="mt-1 text-sm text-neutral-400">{c.summary}</p>
-        </div>
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <h1 className="text-lg font-semibold">
+          {isEditable ? "Revisiona la bozza" : c.title}
+        </h1>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-            isPublished
+            version.status === "published"
               ? "bg-emerald-500/15 text-emerald-300"
               : "bg-amber-500/15 text-amber-300"
           }`}
         >
           {STATUS_LABEL[version.status] ?? version.status}
         </span>
-      </header>
+      </div>
 
-      {version.generated_by_ai && (
+      {version.generated_by_ai && isEditable && (
         <p className="mt-2 text-xs text-neutral-500">
-          ✨ Bozza generata dall&apos;AI — rivedi prima di pubblicare.
+          ✨ Bozza AI — modifica liberamente, poi pubblica. Il cliente non vede
+          nulla finché non pubblichi.
         </p>
       )}
 
@@ -95,11 +107,35 @@ export default async function ProgramReview({
           Scheda pubblicata: ora è visibile al cliente.
         </p>
       )}
+      {saved && (
+        <p className="mt-3 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-sm text-sky-300">
+          Modifiche salvate. Resta una bozza finché non pubblichi.
+        </p>
+      )}
       {error && (
         <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
           {error}
         </p>
       )}
+
+      {isEditable ? (
+        <ProgramEditor
+          versionId={version.id}
+          initialContent={c}
+          exercises={exercises}
+        />
+      ) : (
+        <ReadOnlyProgram content={c} />
+      )}
+    </main>
+  );
+}
+
+// Vista sola-lettura per le schede già pubblicate/archiviate.
+function ReadOnlyProgram({ content: c }: { content: ProgramContent }) {
+  return (
+    <>
+      {c.summary && <p className="mt-3 text-sm text-neutral-400">{c.summary}</p>}
 
       {c.health_flags?.length > 0 && (
         <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
@@ -153,20 +189,9 @@ export default async function ProgramReview({
         </div>
       )}
 
-      {!isPublished && (
-        <form action={approveProgramVersion} className="mt-6">
-          <input type="hidden" name="version_id" value={version.id} />
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-emerald-600 px-4 py-3 font-medium text-white hover:bg-emerald-500"
-          >
-            Approva e pubblica
-          </button>
-          <p className="mt-2 text-center text-xs text-neutral-500">
-            Finché è una bozza, il cliente non la vede.
-          </p>
-        </form>
-      )}
-    </main>
+      <p className="mt-6 text-center text-xs text-neutral-500">
+        Scheda pubblicata e visibile al cliente.
+      </p>
+    </>
   );
 }

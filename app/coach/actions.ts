@@ -146,3 +146,132 @@ export async function approveProgramVersion(formData: FormData) {
   revalidatePath(`/coach/programmi/${versionId}`);
   redirect(`/coach/programmi/${versionId}?published=1`);
 }
+
+// --- Editor della bozza: il coach modifica la scheda prima di pubblicare ------
+
+type EditorExercise = {
+  exercise_id: string;
+  exercise_name: string;
+  sets: number;
+  reps: string;
+  rest_seconds: number;
+  notes: string;
+};
+type EditorDay = { label: string; focus: string; exercises: EditorExercise[] };
+type EditorContent = {
+  title: string;
+  summary: string;
+  coach_notes: string;
+  health_flags: string[];
+  days: EditorDay[];
+};
+
+const clampStr = (s: unknown, max: number) => String(s ?? "").slice(0, max);
+const toInt = (v: unknown, min: number, max: number) => {
+  const n = Math.round(Number(v));
+  if (!Number.isFinite(n)) return min;
+  return Math.min(max, Math.max(min, n));
+};
+
+// Salva le modifiche del coach a una bozza di scheda. Con intent="publish"
+// salva E pubblica (atomico lato DB via RPC). Mantiene gli invarianti:
+//  - GROUNDING: ogni esercizio deve esistere nella libreria del tenant; il nome
+//    viene riscritto dalla libreria (fonte autorevole), mai dal client.
+//  - HUMAN-IN-THE-LOOP: una versione pubblicata/archiviata non è più editabile.
+//  - MULTI-TENANT: oltre alla RLS, vincolo esplicito .eq("tenant_id").
+export async function saveProgramVersion(formData: FormData) {
+  const { profile } = await getCurrentProfile();
+  if (!profile || !isStaff(profile.role)) redirect("/");
+
+  const versionId = String(formData.get("version_id") ?? "");
+  const intent = String(formData.get("intent") ?? "save"); // "save" | "publish"
+  if (!versionId) redirect("/coach");
+
+  const fail = (msg: string): never =>
+    redirect(`/coach/programmi/${versionId}?error=` + encodeURIComponent(msg));
+
+  let incoming: Partial<EditorContent>;
+  try {
+    incoming = JSON.parse(String(formData.get("content") ?? "{}"));
+  } catch {
+    fail("Contenuto non valido, riprova.");
+  }
+
+  const supabase = await createServerSupabase();
+
+  // La versione deve esistere, essere del mio tenant (RLS) e NON ancora pubblicata.
+  const { data: version } = await supabase
+    .from("program_versions")
+    .select("id, status, content")
+    .eq("id", versionId)
+    .maybeSingle();
+  if (!version) {
+    redirect(
+      `/coach/programmi/${versionId}?error=` +
+        encodeURIComponent("Scheda non trovata."),
+    );
+  }
+  if (version.status === "published" || version.status === "archived") {
+    fail("Questa scheda non è più una bozza: non è modificabile.");
+  }
+
+  // GROUNDING: mappa id->nome degli esercizi reali della libreria del tenant.
+  const { data: lib } = await supabase
+    .from("exercises")
+    .select("id, name")
+    .eq("tenant_id", profile.tenant_id);
+  const nameById = new Map<string, string>(
+    (lib ?? []).map((e) => [e.id as string, e.name as string]),
+  );
+
+  // Normalizzazione lato server: niente dato arbitrario finisce nel DB.
+  const prev = (version.content ?? {}) as Partial<EditorContent>;
+  const daysIn = Array.isArray(incoming!.days) ? incoming!.days.slice(0, 14) : [];
+  const days: EditorDay[] = daysIn.map((d) => ({
+    label: clampStr(d?.label, 120),
+    focus: clampStr(d?.focus, 120),
+    exercises: (Array.isArray(d?.exercises) ? d.exercises.slice(0, 40) : [])
+      .filter((ex) => nameById.has(String(ex?.exercise_id)))
+      .map((ex) => {
+        const exId = String(ex.exercise_id);
+        return {
+          exercise_id: exId,
+          exercise_name: nameById.get(exId) as string, // fonte autorevole
+          sets: toInt(ex?.sets, 0, 99),
+          reps: clampStr(ex?.reps, 40),
+          rest_seconds: toInt(ex?.rest_seconds, 0, 3600),
+          notes: clampStr(ex?.notes, 1000),
+        };
+      }),
+  }));
+
+  const content: EditorContent = {
+    title: clampStr(incoming!.title, 200) || clampStr(prev.title, 200) || "Scheda",
+    summary: clampStr(incoming!.summary, 1000),
+    coach_notes: clampStr(incoming!.coach_notes, 2000),
+    // health_flags: non editabili qui -> preservo quelli segnalati dall'AI.
+    health_flags: Array.isArray(prev.health_flags)
+      ? prev.health_flags.map((f) => clampStr(f, 300)).slice(0, 30)
+      : [],
+    days,
+  };
+
+  const { error: upErr } = await supabase
+    .from("program_versions")
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq("id", versionId)
+    .eq("tenant_id", profile.tenant_id); // difesa in profondità oltre alla RLS
+  if (upErr) fail(upErr.message);
+
+  if (intent === "publish") {
+    const { error: pubErr } = await supabase.rpc("publish_program_version", {
+      p_version_id: versionId,
+    });
+    if (pubErr) fail(pubErr.message);
+    revalidatePath(`/coach/programmi/${versionId}`);
+    redirect(`/coach/programmi/${versionId}?published=1`);
+  }
+
+  revalidatePath(`/coach/programmi/${versionId}`);
+  redirect(`/coach/programmi/${versionId}?saved=1`);
+}
