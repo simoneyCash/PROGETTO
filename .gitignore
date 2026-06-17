@@ -6,6 +6,7 @@ node_modules/
 out/
 dist/
 build/
+*.tsbuildinfo
 
 # Variabili d'ambiente (segrete!)
 .env
