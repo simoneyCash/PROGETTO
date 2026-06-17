@@ -2,9 +2,14 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
-import { saveIntake, generateProgramDraft } from "../../actions";
+import {
+  saveIntake,
+  generateProgramDraft,
+  createIntakeLink,
+} from "../../actions";
 import { GenerateButton } from "@/components/GenerateButton";
 import { ArtifactBadge } from "@/components/ui/StatusBadge";
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 
 type ProgramVersion = {
   id: string;
@@ -30,20 +35,20 @@ export default async function ClientDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string; error?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string; invite?: string }>;
 }) {
   const { profile } = await getCurrentProfile();
   if (!profile) redirect("/");
   if (!isStaff(profile.role)) redirect("/cliente");
 
   const { id } = await params;
-  const { saved, error } = await searchParams;
+  const { saved, error, invite } = await searchParams;
 
   const supabase = await createClient();
 
   const { data: client } = await supabase
     .from("clients")
-    .select("id, full_name, email, status")
+    .select("id, full_name, email, status, intake_token, intake_token_expires_at")
     .eq("id", id)
     .maybeSingle();
 
@@ -65,6 +70,10 @@ export default async function ClientDetail({
     .order("created_at", { ascending: false });
   const versions = (versionsData ?? []) as ProgramVersion[];
   const hasIntake = !!intake?.submitted_at;
+  const inviteValid =
+    !!client.intake_token &&
+    (!client.intake_token_expires_at ||
+      new Date(client.intake_token_expires_at) > new Date());
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col p-6">
@@ -78,6 +87,50 @@ export default async function ClientDetail({
           <p className="text-sm text-neutral-500">{client.email}</p>
         )}
       </header>
+
+      {invite && (
+        <p className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          Link anamnesi generato. Copialo e invialo al cliente.
+        </p>
+      )}
+
+      {/* Invito anamnesi (il cliente compila dal telefono) */}
+      <section className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+        <h2 className="text-sm font-medium text-neutral-300">
+          Anamnesi del cliente
+        </h2>
+        <p className="mt-1 text-xs text-neutral-500">
+          Manda un link al cliente: compila lui il questionario dal telefono e i
+          dati riempiono questa scheda.
+        </p>
+        {inviteValid ? (
+          <div className="mt-3 flex flex-col gap-2">
+            <CopyLinkButton path={`/onboarding/${client.intake_token}`} />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-neutral-500">Link attivo</span>
+              <form action={createIntakeLink}>
+                <input type="hidden" name="client_id" value={client.id} />
+                <button
+                  type="submit"
+                  className="text-xs text-neutral-400 hover:text-neutral-200"
+                >
+                  Rigenera
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : (
+          <form action={createIntakeLink} className="mt-3">
+            <input type="hidden" name="client_id" value={client.id} />
+            <button
+              type="submit"
+              className="rounded-lg border border-emerald-600/40 bg-emerald-600/10 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-600/20"
+            >
+              Genera link anamnesi
+            </button>
+          </form>
+        )}
+      </section>
 
       <section className="mt-8">
         <h2 className="text-sm font-medium text-neutral-300">

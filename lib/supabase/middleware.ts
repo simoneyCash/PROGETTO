@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseEnv } from "./env";
 
 // Rotte pubbliche (raggiungibili senza login).
-const PUBLIC_PATHS = ["/login"];
+// /onboarding: l'anamnesi a link, compilata da un lead che non ha un account.
+const PUBLIC_PATHS = ["/login", "/onboarding"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
@@ -50,7 +51,8 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Autenticato che apre /login -> home (dispatcher per ruolo).
-  if (user && isPublic(pathname)) {
+  // Solo /login: /onboarding resta accessibile anche da loggati (es. anteprima).
+  if (user && pathname === "/login") {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/";
     return NextResponse.redirect(redirectUrl);

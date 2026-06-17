@@ -44,7 +44,7 @@ export async function saveIntake(formData: FormData) {
   const clientId = String(formData.get("client_id") ?? "");
   if (!clientId) redirect("/coach");
 
-  const answers = {
+  const flat = {
     goal: String(formData.get("goal") ?? ""),
     experience: String(formData.get("experience") ?? ""),
     days_per_week: String(formData.get("days_per_week") ?? ""),
@@ -58,10 +58,17 @@ export async function saveIntake(formData: FormData) {
   // Un intake per cliente: aggiorna quello esistente, altrimenti crealo.
   const { data: existing } = await supabase
     .from("intakes")
-    .select("id")
+    .select("id, answers")
     .eq("client_id", clientId)
     .limit(1)
     .maybeSingle();
+
+  // Unisci ai dati esistenti: NON perdere le sezioni ricche dell'anamnesi
+  // (anagrafica, obiettivi, salute…) compilate dal cliente via link.
+  const answers = {
+    ...((existing?.answers as Record<string, unknown>) ?? {}),
+    ...flat,
+  };
 
   const now = new Date().toISOString();
   const { error } = existing
@@ -172,6 +179,36 @@ const toInt = (v: unknown, min: number, max: number) => {
   if (!Number.isFinite(n)) return min;
   return Math.min(max, Math.max(min, n));
 };
+
+// Genera (o rigenera) il link d'invito all'anamnesi per un cliente: imposta un
+// token univoco + scadenza a 14 giorni. Scrive solo dentro il proprio tenant.
+export async function createIntakeLink(formData: FormData) {
+  const { profile } = await getCurrentProfile();
+  if (!profile || !isStaff(profile.role)) redirect("/");
+
+  const clientId = String(formData.get("client_id") ?? "");
+  if (!clientId) redirect("/coach");
+
+  const token = crypto.randomUUID();
+  const expires = new Date(
+    Date.now() + 1000 * 60 * 60 * 24 * 14,
+  ).toISOString(); // 14 giorni
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from("clients")
+    .update({ intake_token: token, intake_token_expires_at: expires })
+    .eq("id", clientId)
+    .eq("tenant_id", profile.tenant_id); // difesa in profondità oltre alla RLS
+  if (error) {
+    redirect(
+      `/coach/clienti/${clientId}?error=` + encodeURIComponent(error.message),
+    );
+  }
+
+  revalidatePath(`/coach/clienti/${clientId}`);
+  redirect(`/coach/clienti/${clientId}?invite=1`);
+}
 
 // Salva le modifiche del coach a una bozza di scheda. Con intent="publish"
 // salva E pubblica (atomico lato DB via RPC). Mantiene gli invarianti:
