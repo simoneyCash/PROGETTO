@@ -4,20 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import { saveIntake, generateProgramDraft } from "../../actions";
 import { GenerateButton } from "@/components/GenerateButton";
+import { ArtifactBadge } from "@/components/ui/StatusBadge";
 
 type ProgramVersion = {
   id: string;
   version: number;
   status: string;
   created_at: string;
-};
-
-const VERSION_STATUS_LABEL: Record<string, string> = {
-  draft: "Bozza",
-  pending_review: "In revisione",
-  approved: "Approvata",
-  published: "Pubblicata",
-  archived: "Archiviata",
 };
 
 type IntakeAnswers = {
@@ -212,15 +205,7 @@ export default async function ClientDetail({
                   className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/50 px-3 py-3 hover:border-neutral-700"
                 >
                   <span className="text-sm">Versione {v.version}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${
-                      v.status === "published"
-                        ? "bg-emerald-500/15 text-emerald-300"
-                        : "bg-amber-500/15 text-amber-300"
-                    }`}
-                  >
-                    {VERSION_STATUS_LABEL[v.status] ?? v.status} ›
-                  </span>
+                  <ArtifactBadge status={v.status} />
                 </Link>
               </li>
             ))}

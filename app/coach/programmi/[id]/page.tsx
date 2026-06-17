@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import { ProgramEditor } from "@/components/ProgramEditor";
+import { ArtifactBadge } from "@/components/ui/StatusBadge";
 
 type Exercise = {
   exercise_id: string;
@@ -18,14 +19,6 @@ type ProgramContent = {
   coach_notes: string;
   health_flags: string[];
   days: { label: string; focus: string; exercises: Exercise[] }[];
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "Bozza",
-  pending_review: "In revisione",
-  approved: "Approvata",
-  published: "Pubblicata",
-  archived: "Archiviata",
 };
 
 export default async function ProgramReview({
@@ -84,15 +77,7 @@ export default async function ProgramReview({
         <h1 className="text-lg font-semibold">
           {isEditable ? "Revisiona la bozza" : c.title}
         </h1>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-            version.status === "published"
-              ? "bg-emerald-500/15 text-emerald-300"
-              : "bg-amber-500/15 text-amber-300"
-          }`}
-        >
-          {STATUS_LABEL[version.status] ?? version.status}
-        </span>
+        <ArtifactBadge status={version.status} />
       </div>
 
       {version.generated_by_ai && isEditable && (
