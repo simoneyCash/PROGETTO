@@ -36,6 +36,54 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Riparazione "mojibake" degli accenti.
+// In alcuni runtime la risposta UTF-8 dell'AI viene riletta come Mac Roman:
+// "à" (byte C3 A0) diventa "√†", "è" (C3 A8) diventa "√®", ecc. Qui invertiamo
+// l'errore: rimappiamo ogni carattere al suo byte Mac Roman e li rileggiamo
+// come UTF-8. È SICURO e idempotente:
+//  - agiamo solo su stringhe che contengono i marcatori "√" (byte C3) o
+//    "¬" (byte C2), gli "header" UTF-8 delle lettere accentate;
+//  - se i byte ricostruiti non sono UTF-8 valido, la stringa era già corretta
+//    e la lasciamo invariata. Quindi rilanciarlo due volte non rovina nulla.
+// ---------------------------------------------------------------------------
+const MAC_DECODER = new TextDecoder("x-mac-roman");
+const UNICODE_TO_MAC = new Map<string, number>();
+for (let b = 0; b < 256; b++) {
+  UNICODE_TO_MAC.set(MAC_DECODER.decode(new Uint8Array([b])), b);
+}
+const UTF8_STRICT = new TextDecoder("utf-8", { fatal: true });
+
+function repairText(s: string): string {
+  if (typeof s !== "string") return s;
+  if (!s.includes("√") && !s.includes("¬")) return s; // "√" (byte C3) o "¬" (byte C2)
+  const bytes = new Uint8Array(s.length * 2);
+  let n = 0;
+  for (const ch of s) {
+    const b = UNICODE_TO_MAC.get(ch);
+    if (b === undefined) return s; // carattere fuori da Mac Roman -> non è questo errore
+    bytes[n++] = b;
+  }
+  try {
+    return UTF8_STRICT.decode(bytes.subarray(0, n));
+  } catch {
+    return s; // i byte non formano UTF-8 valido -> stringa già corretta
+  }
+}
+
+// deno-lint-ignore no-explicit-any
+function repairDeep(v: any): any {
+  if (typeof v === "string") return repairText(v);
+  if (Array.isArray(v)) return v.map(repairDeep);
+  if (v && typeof v === "object") {
+    // deno-lint-ignore no-explicit-any
+    const out: Record<string, any> = {};
+    for (const k of Object.keys(v)) out[k] = repairDeep(v[k]);
+    return out;
+  }
+  return v;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -197,6 +245,10 @@ Deno.serve(async (req: Request) => {
         if (lib) ex.exercise_name = lib.name;
       }
     }
+
+    // Ripara eventuali accenti corrotti (mojibake "√†") prima di salvare, così
+    // la bozza nasce pulita anche se il runtime ha mal-decodificato la risposta.
+    program = repairDeep(program);
 
     // --- Persistenza: riusa il programma del cliente (uno solo), aggiungi una
     //     nuova VERSIONE draft (version = max+1). Niente duplicati.
