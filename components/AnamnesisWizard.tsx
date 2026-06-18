@@ -53,9 +53,9 @@ const STEPS: Step[] = [
     ],
   },
   {
-    title: "Stile di vita",
+    title: "Alimentazione e stile di vita",
     fields: [
-      { name: "diet", label: "Come mangi di solito?", type: "textarea" },
+      { name: "diet", label: "Come mangi di solito? (cosa, quanto, quando)", type: "textarea" },
       { name: "allergies", label: "Allergie / intolleranze", type: "text" },
       { name: "sleep_hours", label: "Ore di sonno a notte", type: "select", options: ["", "meno di 5", "5-6", "7-8", "più di 8"] },
       { name: "notes", label: "Altro che vuoi dire al coach", type: "textarea" },
@@ -66,35 +66,61 @@ const STEPS: Step[] = [
 export function AnamnesisWizard({
   token,
   clientName,
+  clientEmail,
 }: {
   token: string;
   clientName: string;
+  clientEmail?: string;
 }) {
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const set = (name: string, v: string) =>
     setValues((s) => ({ ...s, [name]: v }));
+
+  // L'ultimo passo è la creazione dell'accesso (solo se il coach ha messo
+  // un'email per questo cliente: senza email non c'è account da creare).
+  const wantsAccount = !!clientEmail;
+  const totalSteps = STEPS.length + (wantsAccount ? 1 : 0);
+  const isAccountStep = wantsAccount && step === STEPS.length;
+  const isLast = step === totalSteps - 1;
   const current = STEPS[step];
-  const isLast = step === STEPS.length - 1;
   const firstName = clientName.split(" ")[0] || clientName;
 
   async function submit() {
+    if (wantsAccount) {
+      if (password.length < 8) {
+        setError("La password deve avere almeno 8 caratteri.");
+        return;
+      }
+      if (password !== confirm) {
+        setError("Le due password non coincidono.");
+        return;
+      }
+    }
     setSubmitting(true);
     setError(null);
     try {
       const res = await fetch(`/api/onboarding/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(wantsAccount ? { ...values, password } : values),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data?.error ?? "Invio non riuscito, riprova.");
         setSubmitting(false);
+        return;
+      }
+      if (data?.redirect) {
+        // Account creato + login: entriamo nell'app (navigazione completa così
+        // i cookie di sessione appena impostati hanno effetto).
+        window.location.assign(data.redirect);
         return;
       }
       setDone(true);
@@ -124,7 +150,7 @@ export function AnamnesisWizard({
   return (
     <div>
       <div className="flex items-center gap-1.5">
-        {STEPS.map((_, i) => (
+        {Array.from({ length: totalSteps }).map((_, i) => (
           <span
             key={i}
             className={`h-1.5 flex-1 rounded-full ${
@@ -134,52 +160,103 @@ export function AnamnesisWizard({
         ))}
       </div>
       <p className="mt-3 text-xs text-neutral-500">
-        Passo {step + 1} di {STEPS.length}
+        Passo {step + 1} di {totalSteps}
       </p>
-      <h2 className="mt-1 text-xl font-semibold tracking-tight">
-        {current.title}
-      </h2>
-      {current.note && (
-        <p className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
-          {current.note}
-        </p>
-      )}
 
-      <div className="mt-4 flex flex-col gap-4">
-        {current.fields.map((f) => (
-          <label key={f.name} className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-neutral-300">{f.label}</span>
-            {f.type === "textarea" ? (
-              <textarea
-                rows={2}
-                className={field}
-                value={values[f.name] ?? ""}
-                onChange={(e) => set(f.name, e.target.value)}
-              />
-            ) : f.type === "select" ? (
-              <select
-                className={field}
-                value={values[f.name] ?? ""}
-                onChange={(e) => set(f.name, e.target.value)}
-              >
-                {(f.options ?? []).map((o) => (
-                  <option key={o} value={o}>
-                    {o === "" ? "—" : o}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type={f.type}
-                placeholder={f.placeholder}
-                className={field}
-                value={values[f.name] ?? ""}
-                onChange={(e) => set(f.name, e.target.value)}
-              />
+      {isAccountStep ? (
+        // --- Passo finale: crea l'accesso ---
+        <>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight">
+            Crea il tuo accesso
+          </h2>
+          <p className="mt-2 text-sm text-neutral-400">
+            Scegli una password: ti servirà per entrare nella tua app.
+          </p>
+
+          <div className="mt-4 flex flex-col gap-4">
+            {clientEmail && (
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-neutral-300">Accederai con</span>
+                <input
+                  type="email"
+                  value={clientEmail}
+                  readOnly
+                  className={`${field} opacity-70`}
+                />
+              </label>
             )}
-          </label>
-        ))}
-      </div>
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="font-medium text-neutral-300">Password</span>
+              <input
+                type="password"
+                autoComplete="new-password"
+                placeholder="Almeno 8 caratteri"
+                className={field}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="font-medium text-neutral-300">Ripeti la password</span>
+              <input
+                type="password"
+                autoComplete="new-password"
+                className={field}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+            </label>
+          </div>
+        </>
+      ) : (
+        // --- Passi dell'anamnesi ---
+        <>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight">
+            {current.title}
+          </h2>
+          {current.note && (
+            <p className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
+              {current.note}
+            </p>
+          )}
+
+          <div className="mt-4 flex flex-col gap-4">
+            {current.fields.map((f) => (
+              <label key={f.name} className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-neutral-300">{f.label}</span>
+                {f.type === "textarea" ? (
+                  <textarea
+                    rows={2}
+                    className={field}
+                    value={values[f.name] ?? ""}
+                    onChange={(e) => set(f.name, e.target.value)}
+                  />
+                ) : f.type === "select" ? (
+                  <select
+                    className={field}
+                    value={values[f.name] ?? ""}
+                    onChange={(e) => set(f.name, e.target.value)}
+                  >
+                    {(f.options ?? []).map((o) => (
+                      <option key={o} value={o}>
+                        {o === "" ? "—" : o}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={f.type}
+                    placeholder={f.placeholder}
+                    className={field}
+                    value={values[f.name] ?? ""}
+                    onChange={(e) => set(f.name, e.target.value)}
+                  />
+                )}
+              </label>
+            ))}
+          </div>
+        </>
+      )}
 
       {error && (
         <p className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-300">
@@ -191,7 +268,10 @@ export function AnamnesisWizard({
         {step > 0 && (
           <button
             type="button"
-            onClick={() => setStep((s) => s - 1)}
+            onClick={() => {
+              setError(null);
+              setStep((s) => s - 1);
+            }}
             className={`${btn.secondary} flex-1`}
           >
             Indietro
@@ -212,7 +292,11 @@ export function AnamnesisWizard({
             disabled={submitting}
             className={`${btn.primary} flex-1`}
           >
-            {submitting ? "Invio…" : "Invia"}
+            {submitting
+              ? "Invio…"
+              : wantsAccount
+                ? "Crea accesso ed entra"
+                : "Invia"}
           </button>
         )}
       </div>

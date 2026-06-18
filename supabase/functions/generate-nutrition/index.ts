@@ -85,32 +85,51 @@ Deno.serve(async (req: Request) => {
     const { client_id } = await req.json().catch(() => ({ client_id: null }));
     if (!client_id) return json({ error: "client_id mancante" }, 400);
 
-    // --- AuthN: chi è il chiamante? (token utente) ---
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return json({ error: "Non autenticato" }, 401);
-
-    // --- AuthZ: deve essere staff; il cliente deve essere del suo tenant ---
+    // --- Chi chiama? STAFF (token del coach) o SISTEMA (service role, es.
+    //     onboarding automatico che genera le bozze appena il cliente invia).
+    //     Il tenant si ricava sempre dal cliente; lo staff in più dev'essere
+    //     dello stesso tenant. Resta human-in-the-loop: il piano nasce 'draft'.
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const isSystem = !!bearer && bearer === SERVICE_KEY;
 
-    const { data: profile } = await admin
-      .from("profiles").select("id, tenant_id, role").eq("id", user.id).maybeSingle();
-    if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
-      return json({ error: "Non autorizzato" }, 403);
-    }
+    let tenantId: string;
+    let actorId: string | null = null;
+    let client: { id: string; tenant_id: string; full_name: string };
 
-    const { data: client } = await admin
-      .from("clients").select("id, tenant_id, full_name").eq("id", client_id).maybeSingle();
-    if (!client || client.tenant_id !== profile.tenant_id) {
-      return json({ error: "Cliente non trovato nel tuo tenant" }, 404);
+    if (isSystem) {
+      const { data: c } = await admin
+        .from("clients").select("id, tenant_id, full_name").eq("id", client_id).maybeSingle();
+      if (!c) return json({ error: "Cliente non trovato" }, 404);
+      client = c;
+      tenantId = c.tenant_id;
+    } else {
+      const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) return json({ error: "Non autenticato" }, 401);
+
+      const { data: profile } = await admin
+        .from("profiles").select("id, tenant_id, role").eq("id", user.id).maybeSingle();
+      if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
+        return json({ error: "Non autorizzato" }, 403);
+      }
+
+      const { data: c } = await admin
+        .from("clients").select("id, tenant_id, full_name").eq("id", client_id).maybeSingle();
+      if (!c || c.tenant_id !== tenantId) {
+        return json({ error: "Cliente non trovato nel tuo tenant" }, 404);
+      }
+      client = c;
+      tenantId = tenantId;
+      actorId = profile.id;
     }
 
     // --- Dati: intake (obiettivo, anagrafica, abitudini, allergie) ---
     const { data: intake } = await admin
       .from("intakes").select("answers")
-      .eq("tenant_id", profile.tenant_id).eq("client_id", client_id)
+      .eq("tenant_id", tenantId).eq("client_id", client_id)
       .order("created_at", { ascending: false }).limit(1).maybeSingle();
     if (!intake) return json({ error: "Nessun intake: compila prima il questionario" }, 400);
 
@@ -222,13 +241,13 @@ Deno.serve(async (req: Request) => {
     const { data: plan_row, error: insErr } = await admin
       .from("nutrition_plans")
       .insert({
-        tenant_id: profile.tenant_id,
+        tenant_id: tenantId,
         client_id: client.id,
         title: typeof plan.title === "string" ? plan.title : "Piano alimentare",
         status: "draft", // mai auto-pubblicato (human-in-the-loop)
         content: plan,
         generated_by_ai: true,
-        created_by: profile.id,
+        created_by: actorId,
       })
       .select("id")
       .single();
@@ -237,8 +256,8 @@ Deno.serve(async (req: Request) => {
     }
 
     await admin.from("activity_log").insert({
-      tenant_id: profile.tenant_id,
-      actor_id: profile.id,
+      tenant_id: tenantId,
+      actor_id: actorId,
       action: "nutrition.draft_generated",
       entity_type: "nutrition_plan",
       entity_id: plan_row.id,

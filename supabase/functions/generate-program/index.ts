@@ -97,38 +97,57 @@ Deno.serve(async (req: Request) => {
     const { client_id } = await req.json().catch(() => ({ client_id: null }));
     if (!client_id) return json({ error: "client_id mancante" }, 400);
 
-    // --- AuthN: chi è il chiamante? (token utente) ---
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return json({ error: "Non autenticato" }, 401);
-
-    // --- AuthZ: deve essere staff; il cliente deve essere del suo tenant ---
+    // --- Chi chiama? STAFF (token del coach) o SISTEMA (service role, es.
+    //     onboarding automatico che genera le bozze appena il cliente invia).
+    //     Il tenant si ricava sempre dal cliente; lo staff in più dev'essere
+    //     dello stesso tenant. Resta human-in-the-loop: la versione nasce 'draft'.
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const isSystem = !!bearer && bearer === SERVICE_KEY;
 
-    const { data: profile } = await admin
-      .from("profiles").select("id, tenant_id, role").eq("id", user.id).maybeSingle();
-    if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
-      return json({ error: "Non autorizzato" }, 403);
-    }
+    let tenantId: string;
+    let actorId: string | null = null;
+    let client: { id: string; tenant_id: string; full_name: string };
 
-    const { data: client } = await admin
-      .from("clients").select("id, tenant_id, full_name").eq("id", client_id).maybeSingle();
-    if (!client || client.tenant_id !== profile.tenant_id) {
-      return json({ error: "Cliente non trovato nel tuo tenant" }, 404);
+    if (isSystem) {
+      const { data: c } = await admin
+        .from("clients").select("id, tenant_id, full_name").eq("id", client_id).maybeSingle();
+      if (!c) return json({ error: "Cliente non trovato" }, 404);
+      client = c;
+      tenantId = c.tenant_id;
+    } else {
+      const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) return json({ error: "Non autenticato" }, 401);
+
+      const { data: profile } = await admin
+        .from("profiles").select("id, tenant_id, role").eq("id", user.id).maybeSingle();
+      if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
+        return json({ error: "Non autorizzato" }, 403);
+      }
+
+      const { data: c } = await admin
+        .from("clients").select("id, tenant_id, full_name").eq("id", client_id).maybeSingle();
+      if (!c || c.tenant_id !== tenantId) {
+        return json({ error: "Cliente non trovato nel tuo tenant" }, 404);
+      }
+      client = c;
+      tenantId = tenantId;
+      actorId = profile.id;
     }
 
     // --- Dati di grounding: intake + libreria esercizi ---
     const { data: intake } = await admin
       .from("intakes").select("answers")
-      .eq("tenant_id", profile.tenant_id).eq("client_id", client_id)
+      .eq("tenant_id", tenantId).eq("client_id", client_id)
       .order("created_at", { ascending: false }).limit(1).maybeSingle();
     if (!intake) return json({ error: "Nessun intake: compila prima il questionario" }, 400);
 
     const { data: exercises } = await admin
       .from("exercises").select("id, name, muscle_group, equipment")
-      .eq("tenant_id", profile.tenant_id).eq("is_active", true);
+      .eq("tenant_id", tenantId).eq("is_active", true);
     if (!exercises || exercises.length === 0) {
       return json({ error: "Libreria esercizi vuota: aggiungi esercizi prima di generare" }, 400);
     }
@@ -255,7 +274,7 @@ Deno.serve(async (req: Request) => {
     let program_id: string;
     const { data: existingProgram } = await admin
       .from("programs").select("id")
-      .eq("tenant_id", profile.tenant_id).eq("client_id", client.id)
+      .eq("tenant_id", tenantId).eq("client_id", client.id)
       .order("created_at", { ascending: true }).limit(1).maybeSingle();
 
     if (existingProgram) {
@@ -267,7 +286,7 @@ Deno.serve(async (req: Request) => {
       const { data: program_row, error: pErr } = await admin
         .from("programs")
         .insert({
-          tenant_id: profile.tenant_id,
+          tenant_id: tenantId,
           client_id: client.id,
           title: program.title,
           description: program.summary,
@@ -287,22 +306,22 @@ Deno.serve(async (req: Request) => {
     const { data: version_row, error: vErr } = await admin
       .from("program_versions")
       .insert({
-        tenant_id: profile.tenant_id,
+        tenant_id: tenantId,
         program_id,
         client_id: client.id,
         version: nextVersion,
         status: "draft", // mai auto-pubblicato (human-in-the-loop)
         content: program,
         generated_by_ai: true,
-        created_by: profile.id,
+        created_by: actorId,
       })
       .select("id")
       .single();
     if (vErr || !version_row) return json({ error: "Errore salvataggio versione: " + vErr?.message }, 500);
 
     await admin.from("activity_log").insert({
-      tenant_id: profile.tenant_id,
-      actor_id: profile.id,
+      tenant_id: tenantId,
+      actor_id: actorId,
       action: "program.draft_generated",
       entity_type: "program_version",
       entity_id: version_row.id,

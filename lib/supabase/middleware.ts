@@ -7,7 +7,9 @@ import { getSupabaseEnv } from "./env";
 // /api/onboarding: l'endpoint a cui il questionario invia le risposte (stesso
 // flusso senza account). Sicurezza garantita NON dal login ma dal token: la
 // rotta lo risolve lato server con la service role e timbra tenant_id dal record.
-const PUBLIC_PATHS = ["/login", "/onboarding", "/api/onboarding"];
+// /attiva: il cliente sceglie la password e attiva il proprio account dal link
+// generato dal coach (stesso modello a token, account creato lato server).
+const PUBLIC_PATHS = ["/login", "/onboarding", "/api/onboarding", "/attiva"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));

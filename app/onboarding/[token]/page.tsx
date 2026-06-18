@@ -17,7 +17,7 @@ export default async function OnboardingPage({
 
   const { data: client } = await admin
     .from("clients")
-    .select("id, full_name, intake_token_expires_at")
+    .select("id, full_name, email, intake_token_expires_at")
     .eq("intake_token", token)
     .maybeSingle();
 
@@ -65,8 +65,8 @@ export default async function OnboardingPage({
           Ciao {firstName} 👋
         </h1>
         <p className="mt-2 text-sm text-neutral-400">
-          Rispondi a qualche domanda: aiuteranno il tuo coach a costruire il
-          programma su misura per te.
+          Crea il tuo accesso e rispondi a qualche domanda: aiuteranno il tuo
+          coach a costruire il programma su misura per te.
         </p>
       </header>
 
@@ -81,7 +81,11 @@ export default async function OnboardingPage({
           </p>
         </div>
       ) : (
-        <AnamnesisWizard token={token} clientName={client.full_name} />
+        <AnamnesisWizard
+          token={token}
+          clientName={client.full_name}
+          clientEmail={client.email ?? undefined}
+        />
       )}
     </main>
   );

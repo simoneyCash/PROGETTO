@@ -67,7 +67,25 @@ export default async function ClientHome({
     .maybeSingle();
   const program = versionData ? (versionData.content as ProgramContent) : null;
   const days = program?.days ?? [];
-  const nextDay = days[0];
+
+  // "Oggi": ruotiamo il giorno consigliato in base all'ultimo allenamento
+  // completato (il titolo della sessione = l'etichetta del giorno). Se non si
+  // trova, si riparte da A. È una stima utile, non un calendario rigido.
+  let todayIndex = 0;
+  if (days.length > 0) {
+    const { data: lastSession } = await supabase
+      .from("sessions")
+      .select("title")
+      .eq("status", "completed")
+      .order("completed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (lastSession?.title) {
+      const prev = days.findIndex((d) => d.label === lastSession.title);
+      if (prev >= 0) todayIndex = (prev + 1) % days.length;
+    }
+  }
+  const todayDay = days[todayIndex];
 
   const { data: planData } = await supabase
     .from("nutrition_plans")
@@ -109,20 +127,20 @@ export default async function ClientHome({
             {program.title}
           </h2>
 
-          {nextDay && (
+          {todayDay && (
             <>
               <Link
-                href="/cliente/allenamento/0"
+                href={`/cliente/allenamento/${todayIndex}`}
                 className="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-b from-accent-light to-accent px-5 py-3.5 text-accent-ink shadow-[0_18px_34px_-12px_rgba(231,191,112,0.45)] transition hover:brightness-[1.05]"
               >
                 <span className="min-w-0">
                   <span className="block font-semibold">
-                    Inizia · {nextDay.label}
+                    Oggi · {todayDay.label}
                   </span>
                   <span className="block truncate text-xs text-accent-ink/70">
-                    {nextDay.focus}
-                    {nextDay.exercises?.length
-                      ? ` · ${nextDay.exercises.length} esercizi`
+                    {todayDay.focus}
+                    {todayDay.exercises?.length
+                      ? ` · ${todayDay.exercises.length} esercizi`
                       : ""}
                   </span>
                 </span>
@@ -136,7 +154,7 @@ export default async function ClientHome({
                     href={`/cliente/allenamento/${i}`}
                     title={d.label}
                     className={`flex size-10 items-center justify-center rounded-xl text-sm font-medium transition-colors ${
-                      i === 0
+                      i === todayIndex
                         ? "bg-accent/15 text-accent"
                         : "bg-white/5 text-neutral-400 hover:bg-white/10"
                     }`}
@@ -175,7 +193,10 @@ export default async function ClientHome({
       <section>
         <SectionLabel>Azioni di oggi</SectionLabel>
         <div className="grid grid-cols-2 gap-3">
-          <Card href="/cliente/allenamento/0" className="flex flex-col gap-3">
+          <Card
+            href={`/cliente/allenamento/${todayIndex}`}
+            className="flex flex-col gap-3"
+          >
             <Dumbbell className="size-6 text-accent" />
             <span className="text-sm font-medium">Registra allenamento</span>
           </Card>

@@ -2,8 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
+import { sendTransactionalEmail } from "@/lib/email";
+import { accessInviteEmail, onboardingInviteEmail } from "@/lib/email-templates";
+
+// Origine assoluta (https://dominio) dalla richiesta corrente. Su localhost usa
+// http; altrove https. Serve per costruire link cliccabili nelle email.
+async function currentOrigin(): Promise<string> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+  if (!host) return "";
+  const isLocal = host.startsWith("localhost") || host.startsWith("127.0.0.1");
+  const proto = h.get("x-forwarded-proto") ?? (isLocal ? "http" : "https");
+  return `${proto}://${host}`;
+}
 
 // Crea un nuovo cliente nel tenant del coach.
 export async function addClient(formData: FormData) {
@@ -20,20 +34,59 @@ export async function addClient(formData: FormData) {
   }
 
   const supabase = await createServerSupabase();
-  const { error } = await supabase.from("clients").insert({
-    tenant_id: profile.tenant_id, // RLS: deve combaciare con il tenant del coach
-    coach_id: profile.id,
-    full_name,
-    email: email || null,
-    status: "active",
-  });
+  const { data: created, error } = await supabase
+    .from("clients")
+    .insert({
+      tenant_id: profile.tenant_id, // RLS: deve combaciare con il tenant del coach
+      coach_id: profile.id,
+      full_name,
+      email: email || null,
+      status: "active",
+    })
+    .select("id")
+    .single();
 
-  if (error) {
-    redirect("/coach/clienti?error=" + encodeURIComponent(error.message));
+  if (error || !created) {
+    redirect(
+      "/coach/clienti?error=" +
+        encodeURIComponent(error?.message ?? "Errore nella creazione"),
+    );
+  }
+
+  // Se c'è l'email, genera subito il link di onboarding e prova a inviarlo:
+  // il cliente apre il link, crea l'accesso e compila l'anamnesi (un unico
+  // flusso). Senza email configurata si degrada: il coach copia il link dalla
+  // linguetta Anamnesi.
+  if (email) {
+    const token = crypto.randomUUID();
+    const expires = new Date(
+      Date.now() + 1000 * 60 * 60 * 24 * 14,
+    ).toISOString(); // 14 giorni
+    await supabase
+      .from("clients")
+      .update({ intake_token: token, intake_token_expires_at: expires })
+      .eq("id", created.id)
+      .eq("tenant_id", profile.tenant_id);
+
+    let sent = false;
+    const origin = await currentOrigin();
+    if (origin) {
+      const { subject, html, text } = onboardingInviteEmail({
+        clientName: full_name,
+        url: `${origin}/onboarding/${token}`,
+      });
+      const res = await sendTransactionalEmail({ to: email, subject, html, text });
+      sent = res.ok;
+    }
+
+    revalidatePath(`/coach/clienti/${created.id}`);
+    redirect(
+      `/coach/clienti/${created.id}?tab=anamnesi&invited=${sent ? "sent" : "link"}`,
+    );
   }
 
   revalidatePath("/coach/clienti");
-  redirect("/coach/clienti");
+  redirect(`/coach/clienti/${created.id}`);
 }
 
 // Salva (crea o aggiorna) il questionario di intake di un cliente.
@@ -211,6 +264,70 @@ export async function createIntakeLink(formData: FormData) {
 
   revalidatePath(`/coach/clienti/${clientId}`);
   redirect(`/coach/clienti/${clientId}?tab=anamnesi&invite=1`);
+}
+
+// Genera (o rigenera) il link di ATTIVAZIONE account per un cliente: token
+// univoco + scadenza a 7 giorni. Il cliente apre `/attiva/[token]`, sceglie la
+// password e l'account viene creato/collegato lato server. Richiede l'email del
+// cliente (serve a creare l'account). Scrive solo dentro il proprio tenant.
+export async function createClientAccess(formData: FormData) {
+  const { profile } = await getCurrentProfile();
+  if (!profile || !isStaff(profile.role)) redirect("/");
+
+  const clientId = String(formData.get("client_id") ?? "");
+  if (!clientId) redirect("/coach");
+
+  const supabase = await createServerSupabase();
+
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id, full_name, email")
+    .eq("id", clientId)
+    .maybeSingle();
+  if (!client) redirect("/coach/clienti");
+  if (!client.email) {
+    redirect(
+      `/coach/clienti/${clientId}?tab=quadro&error=` +
+        encodeURIComponent(
+          "Aggiungi prima l'email del cliente per creare l'accesso.",
+        ),
+    );
+  }
+
+  const token = crypto.randomUUID();
+  const expires = new Date(
+    Date.now() + 1000 * 60 * 60 * 24 * 7,
+  ).toISOString(); // 7 giorni
+
+  const { error } = await supabase
+    .from("clients")
+    .update({ access_token: token, access_token_expires_at: expires })
+    .eq("id", clientId)
+    .eq("tenant_id", profile.tenant_id); // difesa in profondità oltre alla RLS
+  if (error) {
+    redirect(
+      `/coach/clienti/${clientId}?tab=quadro&error=` +
+        encodeURIComponent(error.message),
+    );
+  }
+
+  // Prova a inviare il link via email (Resend). Se non è configurato o fallisce,
+  // si degrada: il coach copia il link a mano (?access=1). L'email è un "di più".
+  let emailed = false;
+  const origin = await currentOrigin();
+  if (origin && client.email) {
+    const { subject, html, text } = accessInviteEmail({
+      clientName: client.full_name,
+      url: `${origin}/attiva/${token}`,
+    });
+    const res = await sendTransactionalEmail({ to: client.email, subject, html, text });
+    emailed = res.ok;
+  }
+
+  revalidatePath(`/coach/clienti/${clientId}`);
+  redirect(
+    `/coach/clienti/${clientId}?tab=quadro&access=${emailed ? "sent" : "1"}`,
+  );
 }
 
 // Salva le modifiche del coach a una bozza di scheda. Con intent="publish"

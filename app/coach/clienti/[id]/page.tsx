@@ -7,6 +7,7 @@ import {
   saveIntake,
   generateProgramDraft,
   createIntakeLink,
+  createClientAccess,
 } from "../../actions";
 import { GenerateButton } from "@/components/GenerateButton";
 import { ArtifactBadge, CheckinBadge } from "@/components/ui/StatusBadge";
@@ -127,6 +128,8 @@ export default async function ClientDetail({
     saved?: string;
     error?: string;
     invite?: string;
+    invited?: string;
+    access?: string;
     tab?: string;
   }>;
 }) {
@@ -135,13 +138,15 @@ export default async function ClientDetail({
   if (!isStaff(profile.role)) redirect("/cliente");
 
   const { id } = await params;
-  const { saved, error, invite, tab } = await searchParams;
+  const { saved, error, invite, invited, access, tab } = await searchParams;
 
   const supabase = await createClient();
 
   const { data: client } = await supabase
     .from("clients")
-    .select("id, full_name, email, status, intake_token, intake_token_expires_at")
+    .select(
+      "id, full_name, email, status, profile_id, intake_token, intake_token_expires_at, access_token, access_token_expires_at",
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -176,6 +181,13 @@ export default async function ClientDetail({
     (!client.intake_token_expires_at ||
       new Date(client.intake_token_expires_at) > new Date());
 
+  // Accesso all'app: l'account è attivo quando profile_id è collegato.
+  const hasAccount = !!client.profile_id;
+  const accessValid =
+    !!client.access_token &&
+    (!client.access_token_expires_at ||
+      new Date(client.access_token_expires_at) > new Date());
+
   // Valori unificati (sezione ricca se presente, altrimenti campo piatto).
   const ana = a.anagrafica ?? {};
   const obj = a.obiettivi ?? {};
@@ -207,6 +219,73 @@ export default async function ClientDetail({
 
   const quadro = (
     <div className="flex flex-col gap-4">
+      {/* Accesso all'app: crea l'account del cliente con un link, senza SQL */}
+      <Card>
+        <h2 className="text-sm font-medium text-neutral-200">Accesso all&apos;app</h2>
+        {hasAccount ? (
+          <>
+            <p className="mt-1 text-xs text-neutral-500">
+              Account attivo: il cliente accede con la sua email e password.
+            </p>
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-xs text-emerald-300">Account attivo ✓</span>
+              <form action={createClientAccess}>
+                <input type="hidden" name="client_id" value={client.id} />
+                <SubmitButton
+                  className="text-xs text-neutral-400 transition-colors hover:text-neutral-200"
+                  pendingText="Genero…"
+                >
+                  Rigenera link (reset password)
+                </SubmitButton>
+              </form>
+            </div>
+          </>
+        ) : accessValid ? (
+          <>
+            <p className="mt-1 text-xs text-neutral-500">
+              Manda questo link al cliente: aprendolo sceglie la password ed entra
+              subito nell&apos;app.
+            </p>
+            <div className="mt-3 flex flex-col gap-2">
+              <CopyLinkButton path={`/attiva/${client.access_token}`} />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-neutral-500">
+                  Link attivo · 7 giorni
+                </span>
+                <form action={createClientAccess}>
+                  <input type="hidden" name="client_id" value={client.id} />
+                  <SubmitButton
+                    className="text-xs text-neutral-400 transition-colors hover:text-neutral-200"
+                    pendingText="Genero…"
+                  >
+                    Rigenera
+                  </SubmitButton>
+                </form>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="mt-1 text-xs text-neutral-500">
+              Crea un link: il cliente sceglie la password e accede all&apos;app,
+              senza creare nulla a mano.
+            </p>
+            <form action={createClientAccess} className="mt-3">
+              <input type="hidden" name="client_id" value={client.id} />
+              <SubmitButton className={btn.secondary} pendingText="Genero…">
+                Crea link di accesso
+              </SubmitButton>
+            </form>
+            {!client.email && (
+              <p className="mt-2 text-xs text-amber-300/80">
+                Aggiungi prima l&apos;email del cliente per poter creare
+                l&apos;accesso.
+              </p>
+            )}
+          </>
+        )}
+      </Card>
+
       <div className="grid grid-cols-3 gap-2 text-center">
         {[
           { label: "Anamnesi", value: hasIntake ? "✓" : "—" },
@@ -550,9 +629,34 @@ export default async function ClientDetail({
       </header>
 
       {/* Banner globali: visibili su qualunque linguetta */}
+      {invited === "sent" && (
+        <Banner tone="success">
+          Email di invito inviata a {client.email}. Quando completa accesso e
+          questionario, troverai qui i suoi dati.
+        </Banner>
+      )}
+      {invited === "link" && (
+        <Banner tone="info">
+          Cliente creato. L&apos;email automatica non è ancora attiva (serve
+          Resend): invia tu il link dalla sezione &quot;Invito al cliente&quot;
+          qui sotto.
+        </Banner>
+      )}
       {invite && (
         <Banner tone="success">
           Link anamnesi generato. Copialo e invialo al cliente.
+        </Banner>
+      )}
+      {access === "sent" && (
+        <Banner tone="success">
+          Email di accesso inviata al cliente. Può aprirla, scegliere la password
+          ed entrare nell&apos;app.
+        </Banner>
+      )}
+      {access === "1" && (
+        <Banner tone="success">
+          Link di accesso creato. Copialo e invialo al cliente: aprendolo
+          sceglie la password ed entra nell&apos;app.
         </Banner>
       )}
       {saved && <Banner tone="success">Intake salvato.</Banner>}
