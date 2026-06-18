@@ -91,7 +91,12 @@ Deno.serve(async (req: Request) => {
     //     dello stesso tenant. Resta human-in-the-loop: il piano nasce 'draft'.
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
-    const isSystem = !!bearer && bearer === SERVICE_KEY;
+    // SISTEMA = chiamata server-to-server (onboarding automatico). Accettiamo sia
+    // la service key iniettata, sia SYSTEM_SECRET (= la service key di .env.local
+    // usata dalla route): su alcuni progetti le due service key non coincidono.
+    const SYSTEM_SECRET = Deno.env.get("SYSTEM_SECRET");
+    const isSystem =
+      !!bearer && (bearer === SERVICE_KEY || (!!SYSTEM_SECRET && bearer === SYSTEM_SECRET));
 
     let tenantId: string;
     let actorId: string | null = null;
@@ -118,11 +123,11 @@ Deno.serve(async (req: Request) => {
 
       const { data: c } = await admin
         .from("clients").select("id, tenant_id, full_name").eq("id", client_id).maybeSingle();
-      if (!c || c.tenant_id !== tenantId) {
+      if (!c || c.tenant_id !== profile.tenant_id) {
         return json({ error: "Cliente non trovato nel tuo tenant" }, 404);
       }
       client = c;
-      tenantId = tenantId;
+      tenantId = c.tenant_id;
       actorId = profile.id;
     }
 

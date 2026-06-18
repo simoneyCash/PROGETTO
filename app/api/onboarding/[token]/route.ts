@@ -143,6 +143,7 @@ export async function POST(
     try {
       let userId: string | null = client.profile_id ?? null;
       if (userId) {
+        // Questo cliente ha già il SUO account: ok (re)impostare la password.
         await admin.auth.admin.updateUserById(userId, {
           password,
           email_confirm: true,
@@ -157,12 +158,31 @@ export async function POST(
         if (created?.user) {
           userId = created.user.id;
         } else {
-          userId = await findAuthUserIdByEmail(admin, client.email);
-          if (userId) {
-            await admin.auth.admin.updateUserById(userId, {
+          // L'email esiste già come utente auth. NON dobbiamo MAI dirottare un
+          // account altrui (es. il coach!): se quell'utente ha già un profilo,
+          // rifiutiamo. Solo un utente auth ORFANO (nessun profilo) può essere
+          // adottato per questo cliente (recupero di un tentativo a metà).
+          const existingId = await findAuthUserIdByEmail(admin, client.email);
+          if (existingId) {
+            const { data: existingProfile } = await admin
+              .from("profiles")
+              .select("id")
+              .eq("id", existingId)
+              .maybeSingle();
+            if (existingProfile) {
+              return NextResponse.json(
+                {
+                  error:
+                    "Questa email è già associata a un account. Accedi dal login con la tua password, oppure chiedi al coach un link con un'altra email.",
+                },
+                { status: 409 },
+              );
+            }
+            await admin.auth.admin.updateUserById(existingId, {
               password,
               email_confirm: true,
             });
+            userId = existingId;
           }
         }
       }
