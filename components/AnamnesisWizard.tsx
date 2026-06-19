@@ -132,14 +132,14 @@ export function AnamnesisWizard({
 
   if (done) {
     return (
-      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-6 text-center">
+      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/[0.06] p-6 text-center">
         <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-500/15">
           <Check className="size-6 text-emerald-400" />
         </span>
         <h2 className="mt-3 text-lg font-semibold tracking-tight">
           Grazie, {firstName}!
         </h2>
-        <p className="mt-1 text-sm text-neutral-400">
+        <p className="mt-1 text-sm text-muted">
           Il tuo coach ha ricevuto le risposte e preparerà il programma su misura
           per te.
         </p>
@@ -154,12 +154,12 @@ export function AnamnesisWizard({
           <span
             key={i}
             className={`h-1.5 flex-1 rounded-full ${
-              i <= step ? "bg-accent" : "bg-white/10"
+              i <= step ? "bg-primary" : "bg-white/10"
             }`}
           />
         ))}
       </div>
-      <p className="mt-3 text-xs text-neutral-500">
+      <p className="mt-3 text-xs text-muted">
         Passo {step + 1} di {totalSteps}
       </p>
 
@@ -169,14 +169,14 @@ export function AnamnesisWizard({
           <h2 className="mt-1 text-xl font-semibold tracking-tight">
             Crea il tuo accesso
           </h2>
-          <p className="mt-2 text-sm text-neutral-400">
+          <p className="mt-2 text-sm text-muted">
             Scegli una password: ti servirà per entrare nella tua app.
           </p>
 
           <div className="mt-4 flex flex-col gap-4">
             {clientEmail && (
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-neutral-300">Accederai con</span>
+                <span className="font-medium text-foreground">Accederai con</span>
                 <input
                   type="email"
                   value={clientEmail}
@@ -186,7 +186,7 @@ export function AnamnesisWizard({
               </label>
             )}
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-neutral-300">Password</span>
+              <span className="font-medium text-foreground">Password</span>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -197,7 +197,7 @@ export function AnamnesisWizard({
               />
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-neutral-300">Ripeti la password</span>
+              <span className="font-medium text-foreground">Ripeti la password</span>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -223,7 +223,7 @@ export function AnamnesisWizard({
           <div className="mt-4 flex flex-col gap-4">
             {current.fields.map((f) => (
               <label key={f.name} className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-neutral-300">{f.label}</span>
+                <span className="font-medium text-foreground">{f.label}</span>
                 {f.type === "textarea" ? (
                   <textarea
                     rows={2}

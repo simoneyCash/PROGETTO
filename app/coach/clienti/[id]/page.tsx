@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Plus } from "@/components/ui/icons";
+import {
+  Plus,
+  Copy,
+  CircleCheck,
+  Dumbbell,
+  ClipboardCheck,
+  ChevronRight,
+} from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import {
@@ -17,12 +24,18 @@ import {
   Page,
   BackLink,
   Card,
+  SectionLabel,
+  Row,
+  Stat,
+  IconTile,
+  Avatar,
   EmptyState,
   Banner,
   btn,
   field,
 } from "@/components/ui/kit";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Stagger, StaggerItem, AnimatedNumber } from "@/components/ui/motion";
 
 type ProgramVersion = {
   id: string;
@@ -63,7 +76,7 @@ const CLIENT_STATUS: Record<string, { label: string; className: string }> = {
   lead: { label: "Lead", className: "bg-sky-500/15 text-sky-300" },
   active: { label: "Attivo", className: "bg-emerald-500/15 text-emerald-300" },
   paused: { label: "In pausa", className: "bg-amber-500/15 text-amber-300" },
-  churned: { label: "Perso", className: "bg-neutral-700/40 text-neutral-400" },
+  churned: { label: "Perso", className: "bg-neutral-700/40 text-muted" },
 };
 
 const cap = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
@@ -102,14 +115,14 @@ function InfoCard({
   if (visible.length === 0) return null;
   return (
     <Card>
-      <h3 className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+      <h3 className="text-xs font-medium uppercase tracking-wide text-muted">
         {title}
       </h3>
       <dl className="mt-3 flex flex-col gap-3">
         {visible.map((r) => (
           <div key={r.label} className="flex flex-col gap-0.5">
-            <dt className="text-xs text-neutral-500">{r.label}</dt>
-            <dd className="whitespace-pre-wrap text-sm text-neutral-200">
+            <dt className="text-xs text-muted">{r.label}</dt>
+            <dd className="whitespace-pre-wrap text-sm text-foreground">
               {r.value}
             </dd>
           </div>
@@ -205,7 +218,7 @@ export default async function ClientDetail({
 
   const status = CLIENT_STATUS[client.status] ?? {
     label: client.status,
-    className: "bg-neutral-700/40 text-neutral-400",
+    className: "bg-neutral-700/40 text-muted",
   };
 
   // Tab iniziale: dal parametro ?tab, altrimenti "quadro".
@@ -218,44 +231,70 @@ export default async function ClientDetail({
   // ---- Contenuto delle linguette -------------------------------------------
 
   const quadro = (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
+      {/* Sintesi (KPI) */}
+      <div className="grid grid-cols-3 gap-3">
+        <Stat label="Anamnesi" value={hasIntake ? "✓" : "—"} />
+        <Stat
+          label="Scheda"
+          value={versions.length ? `v${versions[0].version}` : "—"}
+        />
+        <Stat label="Check-in" value={<AnimatedNumber value={checkins.length} />} />
+      </div>
+
       {/* Accesso all'app: crea l'account del cliente con un link, senza SQL */}
-      <Card>
-        <h2 className="text-sm font-medium text-neutral-200">Accesso all&apos;app</h2>
-        {hasAccount ? (
-          <>
-            <p className="mt-1 text-xs text-neutral-500">
-              Account attivo: il cliente accede con la sua email e password.
-            </p>
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-xs text-emerald-300">Account attivo ✓</span>
+      <section>
+        <SectionLabel>Accesso all&apos;app</SectionLabel>
+        <Card className="flex flex-col gap-3">
+          <div className="flex items-start gap-3">
+            <IconTile
+              icon={hasAccount ? CircleCheck : Copy}
+              tone={hasAccount ? "accent" : "muted"}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground">
+                Accesso all&apos;app
+              </p>
+              {hasAccount ? (
+                <p className="mt-0.5 text-xs text-muted">
+                  Account attivo: il cliente accede con la sua email e password.
+                </p>
+              ) : accessValid ? (
+                <p className="mt-0.5 text-xs text-muted">
+                  Manda questo link al cliente: aprendolo sceglie la password ed
+                  entra subito nell&apos;app.
+                </p>
+              ) : (
+                <p className="mt-0.5 text-xs text-muted">
+                  Crea un link: il cliente sceglie la password e accede
+                  all&apos;app, senza creare nulla a mano.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {hasAccount ? (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-success">Account attivo ✓</span>
               <form action={createClientAccess}>
                 <input type="hidden" name="client_id" value={client.id} />
                 <SubmitButton
-                  className="text-xs text-neutral-400 transition-colors hover:text-neutral-200"
+                  className="text-xs text-muted transition-colors hover:text-foreground"
                   pendingText="Genero…"
                 >
                   Rigenera link (reset password)
                 </SubmitButton>
               </form>
             </div>
-          </>
-        ) : accessValid ? (
-          <>
-            <p className="mt-1 text-xs text-neutral-500">
-              Manda questo link al cliente: aprendolo sceglie la password ed entra
-              subito nell&apos;app.
-            </p>
-            <div className="mt-3 flex flex-col gap-2">
+          ) : accessValid ? (
+            <div className="flex flex-col gap-2">
               <CopyLinkButton path={`/attiva/${client.access_token}`} />
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-500">
-                  Link attivo · 7 giorni
-                </span>
+                <span className="text-xs text-muted">Link attivo · 7 giorni</span>
                 <form action={createClientAccess}>
                   <input type="hidden" name="client_id" value={client.id} />
                   <SubmitButton
-                    className="text-xs text-neutral-400 transition-colors hover:text-neutral-200"
+                    className="text-xs text-muted transition-colors hover:text-foreground"
                     pendingText="Genero…"
                   >
                     Rigenera
@@ -263,47 +302,24 @@ export default async function ClientDetail({
                 </form>
               </div>
             </div>
-          </>
-        ) : (
-          <>
-            <p className="mt-1 text-xs text-neutral-500">
-              Crea un link: il cliente sceglie la password e accede all&apos;app,
-              senza creare nulla a mano.
-            </p>
-            <form action={createClientAccess} className="mt-3">
-              <input type="hidden" name="client_id" value={client.id} />
-              <SubmitButton className={btn.secondary} pendingText="Genero…">
-                Crea link di accesso
-              </SubmitButton>
-            </form>
-            {!client.email && (
-              <p className="mt-2 text-xs text-amber-300/80">
-                Aggiungi prima l&apos;email del cliente per poter creare
-                l&apos;accesso.
-              </p>
-            )}
-          </>
-        )}
-      </Card>
-
-      <div className="grid grid-cols-3 gap-2 text-center">
-        {[
-          { label: "Anamnesi", value: hasIntake ? "✓" : "—" },
-          {
-            label: "Scheda",
-            value: versions.length ? `v${versions[0].version}` : "—",
-          },
-          { label: "Check-in", value: String(checkins.length) },
-        ].map((s) => (
-          <div
-            key={s.label}
-            className="rounded-xl border border-white/10 bg-white/[0.02] px-2 py-3"
-          >
-            <div className="text-lg font-semibold">{s.value}</div>
-            <div className="mt-0.5 text-xs text-neutral-500">{s.label}</div>
-          </div>
-        ))}
-      </div>
+          ) : (
+            <>
+              <form action={createClientAccess}>
+                <input type="hidden" name="client_id" value={client.id} />
+                <SubmitButton className={btn.secondary} pendingText="Genero…">
+                  Crea link di accesso
+                </SubmitButton>
+              </form>
+              {!client.email && (
+                <p className="text-xs text-warning">
+                  Aggiungi prima l&apos;email del cliente per poter creare
+                  l&apos;accesso.
+                </p>
+              )}
+            </>
+          )}
+        </Card>
+      </section>
 
       <InfoCard
         title="In sintesi"
@@ -318,9 +334,9 @@ export default async function ClientDetail({
       />
 
       {!hasIntake && (
-        <EmptyState>
+        <EmptyState icon={ClipboardCheck}>
           Anamnesi non ancora compilata. Manda il link al cliente dalla linguetta{" "}
-          <span className="text-neutral-300">Anamnesi</span>.
+          <span className="text-foreground">Anamnesi</span>.
         </EmptyState>
       )}
     </div>
@@ -329,23 +345,28 @@ export default async function ClientDetail({
   const anamnesi = (
     <div className="flex flex-col gap-6">
       {/* Invito anamnesi (il cliente compila dal telefono) */}
-      <Card>
-        <h2 className="text-sm font-medium text-neutral-200">
-          Invito al cliente
-        </h2>
-        <p className="mt-1 text-xs text-neutral-500">
-          Manda un link: compila lui il questionario dal telefono e i dati
-          riempiono questa scheda.
-        </p>
+      <Card className="flex flex-col gap-3">
+        <div className="flex items-start gap-3">
+          <IconTile icon={ClipboardCheck} tone="muted" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-foreground">
+              Invito al cliente
+            </p>
+            <p className="mt-0.5 text-xs text-muted">
+              Manda un link: compila lui il questionario dal telefono e i dati
+              riempiono questa scheda.
+            </p>
+          </div>
+        </div>
         {inviteValid ? (
-          <div className="mt-3 flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             <CopyLinkButton path={`/onboarding/${client.intake_token}`} />
             <div className="flex items-center justify-between">
-              <span className="text-xs text-neutral-500">Link attivo</span>
+              <span className="text-xs text-muted">Link attivo</span>
               <form action={createIntakeLink}>
                 <input type="hidden" name="client_id" value={client.id} />
                 <SubmitButton
-                  className="text-xs text-neutral-400 transition-colors hover:text-neutral-200"
+                  className="text-xs text-muted transition-colors hover:text-foreground"
                   pendingText="Genero…"
                 >
                   Rigenera
@@ -354,7 +375,7 @@ export default async function ClientDetail({
             </div>
           </div>
         ) : (
-          <form action={createIntakeLink} className="mt-3">
+          <form action={createIntakeLink}>
             <input type="hidden" name="client_id" value={client.id} />
             <SubmitButton className={btn.secondary} pendingText="Genero…">
               Genera link anamnesi
@@ -435,26 +456,26 @@ export default async function ClientDetail({
           />
         )
       ) : (
-        <EmptyState>
+        <EmptyState icon={ClipboardCheck}>
           Nessuna risposta ancora. Invia il link qui sopra, oppure inseriscila a
           mano qui sotto.
         </EmptyState>
       )}
 
       {/* Editor manuale (secondario): per i clienti che non compilano il link */}
-      <details className="rounded-2xl border border-white/10 bg-white/[0.02] [&_summary]:cursor-pointer">
-        <summary className="px-4 py-3 text-sm font-medium text-neutral-200">
+      <details className="rounded-xl border border-border bg-surface-1 [&_summary]:cursor-pointer">
+        <summary className="px-4 py-3 text-sm font-medium text-foreground">
           Inserisci / modifica a mano
         </summary>
-        <div className="border-t border-white/10 p-4">
-          <p className="text-xs text-neutral-500">
+        <div className="border-t border-border p-4">
+          <p className="text-xs text-muted">
             Queste risposte servono all&apos;AI per generare la bozza di scheda.
           </p>
           <form action={saveIntake} className="mt-4 flex flex-col gap-4">
             <input type="hidden" name="client_id" value={client.id} />
 
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-neutral-300">Obiettivo</span>
+              <span className="text-muted">Obiettivo</span>
               <select name="goal" defaultValue={a.goal ?? ""} className={field}>
                 <option value="">—</option>
                 <option value="dimagrimento">Dimagrimento</option>
@@ -466,7 +487,7 @@ export default async function ClientDetail({
             </label>
 
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-neutral-300">Esperienza</span>
+              <span className="text-muted">Esperienza</span>
               <select
                 name="experience"
                 defaultValue={a.experience ?? ""}
@@ -480,7 +501,7 @@ export default async function ClientDetail({
             </label>
 
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-neutral-300">Giorni a settimana</span>
+              <span className="text-muted">Giorni a settimana</span>
               <select
                 name="days_per_week"
                 defaultValue={a.days_per_week ?? ""}
@@ -496,7 +517,7 @@ export default async function ClientDetail({
             </label>
 
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-neutral-300">Attrezzatura disponibile</span>
+              <span className="text-muted">Attrezzatura disponibile</span>
               <input
                 name="equipment"
                 defaultValue={a.equipment ?? ""}
@@ -506,7 +527,7 @@ export default async function ClientDetail({
             </label>
 
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-neutral-300">Infortuni / limitazioni</span>
+              <span className="text-muted">Infortuni / limitazioni</span>
               <textarea
                 name="injuries"
                 defaultValue={a.injuries ?? ""}
@@ -516,7 +537,7 @@ export default async function ClientDetail({
             </label>
 
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-neutral-300">Note</span>
+              <span className="text-muted">Note</span>
               <textarea
                 name="notes"
                 defaultValue={a.notes ?? ""}
@@ -535,68 +556,74 @@ export default async function ClientDetail({
   );
 
   const scheda = (
-    <div>
+    <div className="flex flex-col gap-6">
       <form action={generateProgramDraft}>
         <input type="hidden" name="client_id" value={client.id} />
         <GenerateButton disabled={!hasIntake} />
         {!hasIntake && (
-          <p className="mt-2 text-xs text-neutral-500">
+          <p className="mt-2 text-xs text-muted">
             Salva prima l&apos;intake per poter generare la scheda.
           </p>
         )}
       </form>
 
       {versions.length > 0 ? (
-        <ul className="mt-4 flex flex-col gap-2">
-          {versions.map((v) => (
-            <li key={v.id}>
-              <Card
+        <section>
+          <SectionLabel>Versioni</SectionLabel>
+          <div className="flex flex-col gap-2">
+            {versions.map((v) => (
+              <Row
+                key={v.id}
                 href={`/coach/programmi/${v.id}`}
-                className="flex items-center justify-between"
-              >
-                <span className="text-sm">Versione {v.version}</span>
-                <ArtifactBadge status={v.status} />
-              </Card>
-            </li>
-          ))}
-        </ul>
+                leading={<IconTile icon={Dumbbell} tone="muted" />}
+                title={`Versione ${v.version}`}
+                trailing={
+                  <>
+                    <ArtifactBadge status={v.status} />
+                    <ChevronRight className="size-4" />
+                  </>
+                }
+              />
+            ))}
+          </div>
+        </section>
       ) : (
-        <div className="mt-4">
-          <EmptyState>Nessuna scheda ancora.</EmptyState>
-        </div>
+        <EmptyState icon={Dumbbell}>Nessuna scheda ancora.</EmptyState>
       )}
     </div>
   );
 
   const checkin = (
-    <div>
+    <div className="flex flex-col gap-6">
       <Link href="/coach/checkin" className={btn.secondary}>
-        <Plus className="size-4" />
+        <Plus className="size-5" />
         Nuovo check-in
       </Link>
 
       {checkins.length > 0 ? (
-        <ul className="mt-4 flex flex-col gap-2">
-          {checkins.map((c) => (
-            <li key={c.id}>
-              <Card
+        <section>
+          <SectionLabel>Cronologia</SectionLabel>
+          <div className="flex flex-col gap-2">
+            {checkins.map((c) => (
+              <Row
+                key={c.id}
                 href={`/coach/checkin/${c.id}`}
-                className="flex items-center justify-between gap-3"
-              >
-                <span className="text-xs text-neutral-500">
-                  {formatDate(c.scheduled_for)}
-                </span>
-                <CheckinBadge status={c.status} />
-              </Card>
-            </li>
-          ))}
-        </ul>
+                leading={<IconTile icon={ClipboardCheck} tone="muted" />}
+                title={formatDate(c.scheduled_for)}
+                trailing={
+                  <>
+                    <CheckinBadge status={c.status} />
+                    <ChevronRight className="size-4" />
+                  </>
+                }
+              />
+            ))}
+          </div>
+        </section>
       ) : (
-        <div className="mt-4">
-          <EmptyState>
-            Nessun check-in ancora per questo cliente.
-          </EmptyState>
-        </div>
+        <EmptyState icon={ClipboardCheck}>
+          Nessun check-in ancora per questo cliente.
+        </EmptyState>
       )}
     </div>
   );
@@ -610,59 +637,86 @@ export default async function ClientDetail({
 
   return (
     <Page className="gap-5">
-      <BackLink href="/coach/clienti">Torna ai clienti</BackLink>
+      <Stagger className="flex flex-col gap-5">
+        <StaggerItem>
+          <BackLink href="/coach/clienti">Torna ai clienti</BackLink>
+        </StaggerItem>
 
-      <header className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="truncate text-2xl font-semibold tracking-tight">
-            {client.full_name}
-          </h1>
-          {client.email && (
-            <p className="truncate text-sm text-neutral-500">{client.email}</p>
-          )}
-        </div>
-        <span
-          className={`mt-1 shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}
-        >
-          {status.label}
-        </span>
-      </header>
+        <StaggerItem>
+          <header className="flex items-start gap-3">
+            <Avatar name={client.full_name} />
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-2xl font-semibold tracking-tight">
+                {client.full_name}
+              </h1>
+              {client.email && (
+                <p className="truncate text-sm text-muted">{client.email}</p>
+              )}
+            </div>
+            <span
+              className={`mt-1 shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}
+            >
+              {status.label}
+            </span>
+          </header>
+        </StaggerItem>
 
-      {/* Banner globali: visibili su qualunque linguetta */}
-      {invited === "sent" && (
-        <Banner tone="success">
-          Email di invito inviata a {client.email}. Quando completa accesso e
-          questionario, troverai qui i suoi dati.
-        </Banner>
-      )}
-      {invited === "link" && (
-        <Banner tone="info">
-          Cliente creato. L&apos;email automatica non è ancora attiva (serve
-          Resend): invia tu il link dalla sezione &quot;Invito al cliente&quot;
-          qui sotto.
-        </Banner>
-      )}
-      {invite && (
-        <Banner tone="success">
-          Link anamnesi generato. Copialo e invialo al cliente.
-        </Banner>
-      )}
-      {access === "sent" && (
-        <Banner tone="success">
-          Email di accesso inviata al cliente. Può aprirla, scegliere la password
-          ed entrare nell&apos;app.
-        </Banner>
-      )}
-      {access === "1" && (
-        <Banner tone="success">
-          Link di accesso creato. Copialo e invialo al cliente: aprendolo
-          sceglie la password ed entra nell&apos;app.
-        </Banner>
-      )}
-      {saved && <Banner tone="success">Intake salvato.</Banner>}
-      {error && <Banner tone="error">{error}</Banner>}
+        {/* Banner globali: visibili su qualunque linguetta */}
+        {invited === "sent" && (
+          <StaggerItem>
+            <Banner tone="success">
+              Email di invito inviata a {client.email}. Quando completa accesso e
+              questionario, troverai qui i suoi dati.
+            </Banner>
+          </StaggerItem>
+        )}
+        {invited === "link" && (
+          <StaggerItem>
+            <Banner tone="info">
+              Cliente creato. L&apos;email automatica non è ancora attiva (serve
+              Resend): invia tu il link dalla sezione &quot;Invito al
+              cliente&quot; qui sotto.
+            </Banner>
+          </StaggerItem>
+        )}
+        {invite && (
+          <StaggerItem>
+            <Banner tone="success">
+              Link anamnesi generato. Copialo e invialo al cliente.
+            </Banner>
+          </StaggerItem>
+        )}
+        {access === "sent" && (
+          <StaggerItem>
+            <Banner tone="success">
+              Email di accesso inviata al cliente. Può aprirla, scegliere la
+              password ed entrare nell&apos;app.
+            </Banner>
+          </StaggerItem>
+        )}
+        {access === "1" && (
+          <StaggerItem>
+            <Banner tone="success">
+              Link di accesso creato. Copialo e invialo al cliente: aprendolo
+              sceglie la password ed entra nell&apos;app.
+            </Banner>
+          </StaggerItem>
+        )}
+        {saved && (
+          <StaggerItem>
+            <Banner tone="success">Intake salvato.</Banner>
+          </StaggerItem>
+        )}
+        {error && (
+          <StaggerItem>
+            <Banner tone="error">{error}</Banner>
+          </StaggerItem>
+        )}
 
-      <Tabs tabs={tabs} defaultTab={defaultTab} />
+        <StaggerItem>
+          <Tabs tabs={tabs} defaultTab={defaultTab} />
+        </StaggerItem>
+      </Stagger>
     </Page>
   );
 }

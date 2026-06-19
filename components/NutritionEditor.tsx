@@ -89,11 +89,11 @@ export function NutritionEditor({
   const removeMeal = (mi: number) =>
     setContent((c) => ({ ...c, meals: c.meals.filter((_, i) => i !== mi) }));
 
-  // Variante compatta del campo del kit (text-base evita lo zoom iOS).
+  // Variante compatta del campo del kit (text-[16px] evita lo zoom iOS).
   const field =
-    "w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-base text-neutral-100 outline-none transition-colors placeholder:text-neutral-600 focus:border-accent focus:ring-1 focus:ring-accent";
+    "w-full rounded-md border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[16px] text-foreground outline-none transition-colors placeholder:text-faint focus:border-border focus:ring-1 focus:ring-border";
   const num =
-    "w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-neutral-100 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent";
+    "w-full rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-2 text-[16px] text-foreground outline-none transition-colors focus:border-border focus:ring-1 focus:ring-border";
 
   return (
     <form action={saveNutritionPlan} className="flex flex-col gap-4 pb-6">
@@ -101,7 +101,7 @@ export function NutritionEditor({
       <input type="hidden" name="content" value={JSON.stringify(content)} />
 
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="text-xs font-medium uppercase tracking-wide text-muted">
           Titolo
         </label>
         <input
@@ -109,21 +109,21 @@ export function NutritionEditor({
           onChange={(e) => setContent((c) => ({ ...c, title: e.target.value }))}
           className={`${field} font-semibold`}
         />
-        <label className="mt-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="mt-1 text-xs font-medium uppercase tracking-wide text-muted">
           Sintesi
         </label>
         <textarea
           value={content.summary}
           onChange={(e) => setContent((c) => ({ ...c, summary: e.target.value }))}
           rows={2}
-          className={`${field} text-neutral-300`}
+          className={`${field} text-foreground`}
         />
       </div>
 
       {/* Obiettivi nutrizionali */}
       <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase text-neutral-500">Kcal / giorno</span>
+          <span className="text-[10px] uppercase text-muted">Kcal / giorno</span>
           <input
             type="number"
             min={0}
@@ -136,7 +136,7 @@ export function NutritionEditor({
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase text-neutral-500">Proteine (g)</span>
+          <span className="text-[10px] uppercase text-muted">Proteine (g)</span>
           <input
             type="number"
             min={0}
@@ -149,7 +149,7 @@ export function NutritionEditor({
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase text-neutral-500">Carboidrati (g)</span>
+          <span className="text-[10px] uppercase text-muted">Carboidrati (g)</span>
           <input
             type="number"
             min={0}
@@ -162,7 +162,7 @@ export function NutritionEditor({
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase text-neutral-500">Grassi (g)</span>
+          <span className="text-[10px] uppercase text-muted">Grassi (g)</span>
           <input
             type="number"
             min={0}
@@ -191,7 +191,7 @@ export function NutritionEditor({
       )}
 
       {content.meals.map((meal, mi) => (
-        <div key={mi} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+        <div key={mi} className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
           <div className="flex items-center gap-2">
             <input
               value={meal.name}
@@ -219,20 +219,20 @@ export function NutritionEditor({
                   value={it.food}
                   onChange={(e) => setItem(mi, ii, { food: e.target.value })}
                   placeholder="Alimento"
-                  className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-neutral-100 outline-none transition-colors placeholder:text-neutral-600 focus:border-accent focus:ring-1 focus:ring-accent"
+                  className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-2 text-[16px] text-foreground outline-none transition-colors placeholder:text-faint focus:border-border focus:ring-1 focus:ring-border"
                 />
                 <input
                   value={it.quantity}
                   onChange={(e) => setItem(mi, ii, { quantity: e.target.value })}
                   placeholder="Q.tà"
-                  className="w-20 shrink-0 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-neutral-100 outline-none transition-colors placeholder:text-neutral-600 focus:border-accent focus:ring-1 focus:ring-accent"
+                  className="w-20 shrink-0 rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-2 text-[16px] text-foreground outline-none transition-colors placeholder:text-faint focus:border-border focus:ring-1 focus:ring-border"
                 />
                 <div className="flex shrink-0 gap-1">
                   <button
                     type="button"
                     onClick={() => moveItem(mi, ii, -1)}
                     aria-label="Sposta su"
-                    className="rounded-lg border border-white/10 p-1.5 text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-200"
+                    className="rounded-lg border border-white/10 p-1.5 text-muted transition-colors hover:bg-white/5 hover:text-foreground"
                   >
                     <ArrowUp className="size-3.5" />
                   </button>
@@ -240,7 +240,7 @@ export function NutritionEditor({
                     type="button"
                     onClick={() => moveItem(mi, ii, 1)}
                     aria-label="Sposta giù"
-                    className="rounded-lg border border-white/10 p-1.5 text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-200"
+                    className="rounded-lg border border-white/10 p-1.5 text-muted transition-colors hover:bg-white/5 hover:text-foreground"
                   >
                     <ArrowDown className="size-3.5" />
                   </button>
@@ -259,7 +259,7 @@ export function NutritionEditor({
             <button
               type="button"
               onClick={() => addItem(mi)}
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 px-3 py-2 text-sm text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-200"
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 px-3 py-2 text-sm text-muted transition-colors hover:bg-white/5 hover:text-foreground"
             >
               <Plus className="size-4" />
               Aggiungi alimento
@@ -269,7 +269,7 @@ export function NutritionEditor({
               value={meal.notes}
               onChange={(e) => setMeal(mi, { notes: e.target.value })}
               placeholder="Note del pasto (facoltative)"
-              className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-xs text-neutral-300 outline-none transition-colors placeholder:text-neutral-600 focus:border-accent focus:ring-1 focus:ring-accent"
+              className="w-full rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-2 text-[16px] text-foreground outline-none transition-colors placeholder:text-faint focus:border-border focus:ring-1 focus:ring-border"
             />
           </div>
         </div>
@@ -278,21 +278,21 @@ export function NutritionEditor({
       <button
         type="button"
         onClick={addMeal}
-        className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 px-3 py-2.5 text-sm text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-200"
+        className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 px-3 py-2.5 text-sm text-muted transition-colors hover:bg-white/5 hover:text-foreground"
       >
         <Plus className="size-4" />
         Aggiungi pasto
       </button>
 
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="text-xs font-medium uppercase tracking-wide text-muted">
           Note per il coach (private)
         </label>
         <textarea
           value={content.coach_notes}
           onChange={(e) => setContent((c) => ({ ...c, coach_notes: e.target.value }))}
           rows={3}
-          className={`${field} text-neutral-300`}
+          className={`${field} text-foreground`}
         />
       </div>
 
@@ -304,7 +304,7 @@ export function NutritionEditor({
 function EditorActions() {
   const { pending } = useFormStatus();
   return (
-    <div className="sticky bottom-0 z-10 -mx-6 mt-2 border-t border-white/10 bg-neutral-950/95 px-6 py-3 backdrop-blur">
+    <div className="sticky bottom-0 z-10 -mx-6 mt-2 border-t border-white/10 bg-background/95 px-6 py-3 backdrop-blur">
       <div className="flex w-full gap-2">
         <button
           type="submit"

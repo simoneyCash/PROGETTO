@@ -3,19 +3,19 @@ import { redirect } from "next/navigation";
 import { MessageCircle, ChevronRight } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
-import { Page, BackLink, PageHeader, EmptyState } from "@/components/ui/kit";
+import {
+  Page,
+  BackLink,
+  PageHeader,
+  EmptyState,
+  SectionLabel,
+  Row,
+  Avatar,
+} from "@/components/ui/kit";
+import { Stagger, StaggerItem } from "@/components/ui/motion";
 
 type ClientRow = { id: string; full_name: string };
 type MessageRow = { client_id: string; body: string; created_at: string };
-
-// Iniziali per l'avatar (max 2 lettere).
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("") || "?";
 
 export default async function CoachMessages() {
   const { profile } = await getCurrentProfile();
@@ -43,53 +43,54 @@ export default async function CoachMessages() {
 
   return (
     <Page>
-      <BackLink href="/coach">Dashboard</BackLink>
+      <Stagger className="flex flex-col gap-6">
+        <StaggerItem>
+          <BackLink href="/coach">Dashboard</BackLink>
+        </StaggerItem>
 
-      <PageHeader title="Messaggi" />
+        <StaggerItem>
+          <PageHeader title="Messaggi" eyebrow="Conversazioni" />
+        </StaggerItem>
 
-      <p className="-mt-4 text-xs text-neutral-500">
-        Conversazioni con i tuoi clienti. (Il cliente potrà rispondere dal suo
-        portale, in arrivo.)
-      </p>
+        <StaggerItem>
+          <p className="-mt-4 text-sm text-muted">
+            Conversazioni con i tuoi clienti. (Il cliente potrà rispondere dal suo
+            portale, in arrivo.)
+          </p>
+        </StaggerItem>
 
-      <section>
-        {clients.length === 0 ? (
-          <EmptyState icon={MessageCircle}>
-            Aggiungi prima un cliente in{" "}
-            <Link href="/coach/clienti" className="text-accent underline">
-              Clienti
-            </Link>
-            .
-          </EmptyState>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            {clients.map((c) => {
-              const last = lastByClient.get(c.id);
-              return (
-                <li key={c.id}>
-                  <Link
-                    href={`/coach/messaggi/${c.id}`}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5 transition-colors hover:border-white/20"
-                  >
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-xs font-medium text-neutral-300">
-                      {initials(c.full_name)}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">
-                        {c.full_name}
-                      </span>
-                      <span className="block truncate text-xs text-neutral-500">
-                        {last ? last.body : "Nessun messaggio"}
-                      </span>
-                    </span>
-                    <ChevronRight className="size-4 shrink-0 text-neutral-600" />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+        <StaggerItem>
+          <section>
+            <SectionLabel>Clienti</SectionLabel>
+            {clients.length === 0 ? (
+              <EmptyState icon={MessageCircle}>
+                Aggiungi prima un cliente in{" "}
+                <Link href="/coach/clienti" className="text-foreground underline">
+                  Clienti
+                </Link>
+                .
+              </EmptyState>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {clients.map((c) => {
+                  const last = lastByClient.get(c.id);
+                  return (
+                    <li key={c.id}>
+                      <Row
+                        href={`/coach/messaggi/${c.id}`}
+                        leading={<Avatar name={c.full_name} />}
+                        title={c.full_name}
+                        subtitle={last ? last.body : "Nessun messaggio"}
+                        trailing={<ChevronRight className="size-4" />}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        </StaggerItem>
+      </Stagger>
     </Page>
   );
 }

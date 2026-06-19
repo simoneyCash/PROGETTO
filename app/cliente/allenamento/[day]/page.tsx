@@ -2,7 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { Dumbbell } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
-import { Page, BackLink, IconTile, Banner } from "@/components/ui/kit";
+import { Page, BackLink, IconTile, Banner } from "@/components/ui/client";
+import { Stagger, StaggerItem } from "@/components/ui/motion";
 import { WorkoutSession } from "@/components/WorkoutSession";
 
 type Exercise = {
@@ -58,23 +59,37 @@ export default async function LogWorkout({
 
   return (
     <Page>
-      <BackLink href="/cliente">La tua scheda</BackLink>
+      <Stagger className="flex flex-col gap-6">
+        <StaggerItem>
+          <BackLink href="/cliente">La tua scheda</BackLink>
+        </StaggerItem>
 
-      <header className="flex items-center gap-3">
-        <IconTile icon={Dumbbell} />
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{d.label}</h1>
-          <p className="text-sm text-neutral-500">{d.focus}</p>
-        </div>
-      </header>
+        <StaggerItem>
+          <header className="flex items-center gap-3.5">
+            <IconTile icon={Dumbbell} color="var(--accent)" />
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-muted">{d.focus}</p>
+              <h1 className="mt-0.5 truncate text-[26px] font-extrabold tracking-tight text-foreground">
+                {d.label}
+              </h1>
+            </div>
+          </header>
+        </StaggerItem>
 
-      {error && <Banner tone="error">{error}</Banner>}
+        {error && (
+          <StaggerItem>
+            <Banner tone="error">{error}</Banner>
+          </StaggerItem>
+        )}
 
-      <WorkoutSession
-        dayIndex={dayIndex}
-        exercises={exercises}
-        storageKey={`coachai:w:${version.id}:${dayIndex}`}
-      />
+        <StaggerItem>
+          <WorkoutSession
+            dayIndex={dayIndex}
+            exercises={exercises}
+            storageKey={`coachai:w:${version.id}:${dayIndex}`}
+          />
+        </StaggerItem>
+      </Stagger>
     </Page>
   );
 }

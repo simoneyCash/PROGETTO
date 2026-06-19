@@ -15,7 +15,7 @@ export default async function Home() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
       <h1 className="text-xl font-semibold">Account non ancora configurato</h1>
-      <p className="max-w-sm text-sm text-neutral-400">
+      <p className="max-w-sm text-sm text-muted">
         Il tuo accesso è valido, ma l&apos;account non è ancora collegato a un
         coach. Contatta l&apos;amministratore per il completamento.
       </p>

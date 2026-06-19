@@ -1,6 +1,16 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+
+// Inter Variable self-hosted (next/font la scarica a build-time e la serve dal
+// nostro dominio → funziona offline nella PWA). Espone --font-inter, a cui
+// punta --font-sans in globals.css. Feature cv01/ss03 impostate sul body.
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Coach AI",
@@ -20,14 +30,14 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#050605",
+  themeColor: "#08090a",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="it" className="dark">
+    <html lang="it" className={`dark ${inter.variable}`}>
       <body>
         {children}
         <ServiceWorkerRegister />

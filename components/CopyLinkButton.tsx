@@ -25,7 +25,7 @@ export function CopyLinkButton({ path }: { path: string }) {
 
   return (
     <div className="flex items-center gap-2">
-      <code className="min-w-0 flex-1 truncate rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-neutral-300">
+      <code className="min-w-0 flex-1 truncate rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-foreground">
         {path}
       </code>
       <button

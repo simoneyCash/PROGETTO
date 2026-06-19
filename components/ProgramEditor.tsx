@@ -95,9 +95,9 @@ export function ProgramEditor({
     });
 
   // Variante compatta del campo del kit (stesso stile, padding ridotto per
-  // l'editor fitto): bordo white/10, focus viola (text-base evita lo zoom iOS).
+  // l'editor fitto): bordo white/10, focus oro (text-base evita lo zoom iOS).
   const field =
-    "w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-base text-neutral-100 outline-none transition-colors placeholder:text-neutral-600 focus:border-accent focus:ring-1 focus:ring-accent";
+    "w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[16px] text-foreground outline-none transition-colors placeholder:text-faint focus:border-border focus:ring-1 focus:ring-border";
 
   return (
     <form action={saveProgramVersion} className="flex flex-col gap-4 pb-6">
@@ -105,7 +105,7 @@ export function ProgramEditor({
       <input type="hidden" name="content" value={JSON.stringify(content)} />
 
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="text-xs font-medium uppercase tracking-wide text-muted">
           Titolo
         </label>
         <input
@@ -113,14 +113,14 @@ export function ProgramEditor({
           onChange={(e) => setContent((c) => ({ ...c, title: e.target.value }))}
           className={`${field} font-semibold`}
         />
-        <label className="mt-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="mt-1 text-xs font-medium uppercase tracking-wide text-muted">
           Sintesi
         </label>
         <textarea
           value={content.summary}
           onChange={(e) => setContent((c) => ({ ...c, summary: e.target.value }))}
           rows={2}
-          className={`${field} text-neutral-300`}
+          className={`${field} text-foreground`}
         />
       </div>
 
@@ -139,7 +139,7 @@ export function ProgramEditor({
       )}
 
       {content.days.map((day, di) => (
-        <div key={di} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+        <div key={di} className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
               value={day.label}
@@ -151,7 +151,7 @@ export function ProgramEditor({
               value={day.focus}
               onChange={(e) => setDay(di, { focus: e.target.value })}
               placeholder="Focus (es. petto, spalle)"
-              className={`${field} flex-1 text-neutral-400`}
+              className={`${field} flex-1 text-muted`}
             />
           </div>
 
@@ -162,7 +162,7 @@ export function ProgramEditor({
                   <select
                     value={ex.exercise_id}
                     onChange={(e) => setExercise(di, ei, { exercise_id: e.target.value })}
-                    className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm text-neutral-100 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
+                    className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[16px] text-foreground outline-none transition-colors focus:border-border focus:ring-1 focus:ring-border"
                   >
                     {!exercises.some((l) => l.id === ex.exercise_id) && (
                       <option value={ex.exercise_id}>
@@ -180,7 +180,7 @@ export function ProgramEditor({
                       type="button"
                       onClick={() => moveExercise(di, ei, -1)}
                       aria-label="Sposta su"
-                      className="rounded-lg border border-white/10 p-2 text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-200"
+                      className="rounded-lg border border-white/10 p-2 text-muted transition-colors hover:bg-white/5 hover:text-foreground"
                     >
                       <ArrowUp className="size-4" />
                     </button>
@@ -188,7 +188,7 @@ export function ProgramEditor({
                       type="button"
                       onClick={() => moveExercise(di, ei, 1)}
                       aria-label="Sposta giù"
-                      className="rounded-lg border border-white/10 p-2 text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-200"
+                      className="rounded-lg border border-white/10 p-2 text-muted transition-colors hover:bg-white/5 hover:text-foreground"
                     >
                       <ArrowDown className="size-4" />
                     </button>
@@ -205,26 +205,26 @@ export function ProgramEditor({
 
                 <div className="mt-2 grid grid-cols-3 gap-2">
                   <label className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase text-neutral-500">Serie</span>
+                    <span className="text-[10px] uppercase text-muted">Serie</span>
                     <input
                       type="number"
                       min={0}
                       max={99}
                       value={ex.sets}
                       onChange={(e) => setExercise(di, ei, { sets: Number(e.target.value) })}
-                      className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-neutral-100 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
+                      className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-[16px] text-foreground outline-none transition-colors focus:border-border focus:ring-1 focus:ring-border"
                     />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase text-neutral-500">Ripetizioni</span>
+                    <span className="text-[10px] uppercase text-muted">Ripetizioni</span>
                     <input
                       value={ex.reps}
                       onChange={(e) => setExercise(di, ei, { reps: e.target.value })}
-                      className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-neutral-100 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
+                      className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-[16px] text-foreground outline-none transition-colors focus:border-border focus:ring-1 focus:ring-border"
                     />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase text-neutral-500">Rec. (s)</span>
+                    <span className="text-[10px] uppercase text-muted">Rec. (s)</span>
                     <input
                       type="number"
                       min={0}
@@ -233,7 +233,7 @@ export function ProgramEditor({
                       onChange={(e) =>
                         setExercise(di, ei, { rest_seconds: Number(e.target.value) })
                       }
-                      className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-sm text-neutral-100 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
+                      className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-[16px] text-foreground outline-none transition-colors focus:border-border focus:ring-1 focus:ring-border"
                     />
                   </label>
                 </div>
@@ -242,7 +242,7 @@ export function ProgramEditor({
                   value={ex.notes}
                   onChange={(e) => setExercise(di, ei, { notes: e.target.value })}
                   placeholder="Note (tecnica, tempo, cues…)"
-                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-xs text-neutral-300 outline-none transition-colors placeholder:text-neutral-600 focus:border-accent focus:ring-1 focus:ring-accent"
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-[16px] text-foreground outline-none transition-colors placeholder:text-faint focus:border-border focus:ring-1 focus:ring-border"
                 />
               </div>
             ))}
@@ -251,7 +251,7 @@ export function ProgramEditor({
               type="button"
               onClick={() => addExercise(di)}
               disabled={exercises.length === 0}
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 px-3 py-2.5 text-sm text-neutral-400 transition-colors hover:bg-white/5 hover:text-neutral-200 disabled:opacity-40"
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 px-3 py-2.5 text-sm text-muted transition-colors hover:bg-white/5 hover:text-foreground disabled:opacity-40"
             >
               <Plus className="size-4" />
               Aggiungi esercizio
@@ -261,14 +261,14 @@ export function ProgramEditor({
       ))}
 
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="text-xs font-medium uppercase tracking-wide text-muted">
           Note per il coach (private)
         </label>
         <textarea
           value={content.coach_notes}
           onChange={(e) => setContent((c) => ({ ...c, coach_notes: e.target.value }))}
           rows={3}
-          className={`${field} text-neutral-300`}
+          className={`${field} text-foreground`}
         />
       </div>
 
@@ -282,7 +282,7 @@ export function ProgramEditor({
 function EditorActions() {
   const { pending } = useFormStatus();
   return (
-    <div className="sticky bottom-0 z-10 -mx-6 mt-2 border-t border-white/10 bg-neutral-950/95 px-6 py-3 backdrop-blur">
+    <div className="sticky bottom-0 z-10 -mx-6 mt-2 border-t border-white/10 bg-background/95 px-6 py-3 backdrop-blur">
       <div className="flex w-full gap-2">
         <button
           type="submit"

@@ -7,10 +7,14 @@ import {
   BackLink,
   PageHeader,
   SectionLabel,
-  Card,
   EmptyState,
   Banner,
+  Stat,
+  Row,
+  IconTile,
+  Avatar,
 } from "@/components/ui/kit";
+import { Stagger, StaggerItem, AnimatedNumber } from "@/components/ui/motion";
 
 type ClientRow = { id: string; full_name: string };
 type SubRow = {
@@ -64,74 +68,102 @@ export default async function CoachPayments() {
 
   return (
     <Page>
-      <BackLink href="/coach">Dashboard</BackLink>
+      <Stagger className="flex flex-col gap-6">
+        <StaggerItem>
+          <BackLink href="/coach">Dashboard</BackLink>
+        </StaggerItem>
 
-      <PageHeader
-        eyebrow="Abbonamenti e incassi dei tuoi clienti"
-        title="Pagamenti"
-      />
+        <StaggerItem>
+          <PageHeader
+            eyebrow="Abbonamenti e incassi dei tuoi clienti"
+            title="Pagamenti"
+          />
+        </StaggerItem>
 
-      <Banner tone="info">
-        Questa pagina si popola da sola quando colleghiamo <b>Stripe</b>. Per ora
-        è la struttura, pronta a ricevere abbonamenti e pagamenti.
-      </Banner>
+        <StaggerItem>
+          <Banner tone="info">
+            Questa pagina si popola da sola quando colleghiamo <b>Stripe</b>. Per
+            ora è la struttura, pronta a ricevere abbonamenti e pagamenti.
+          </Banner>
+        </StaggerItem>
 
-      {/* Abbonamenti */}
-      <section>
-        <SectionLabel right={<span className="text-xs text-neutral-500">{subs.length}</span>}>
-          Abbonamenti
-        </SectionLabel>
-        {subs.length === 0 ? (
-          <EmptyState icon={CreditCard}>Nessun abbonamento ancora.</EmptyState>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            {subs.map((s) => (
-              <li key={s.id}>
-                <Card className="flex items-center justify-between">
-                  <span className="font-medium">
-                    {s.client_id ? clientName.get(s.client_id) ?? "Cliente" : "—"}
-                  </span>
-                  <span className="text-xs text-neutral-400">
-                    {s.status ?? "—"}
-                  </span>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        {/* KPI di sintesi */}
+        <StaggerItem>
+          <div className="grid grid-cols-2 gap-3">
+            <Stat label="Abbonamenti" value={<AnimatedNumber value={subs.length} />} />
+            <Stat
+              label="Pagamenti recenti"
+              value={<AnimatedNumber value={payments.length} />}
+            />
+          </div>
+        </StaggerItem>
 
-      {/* Pagamenti */}
-      <section>
-        <SectionLabel right={<span className="text-xs text-neutral-500">{payments.length}</span>}>
-          Pagamenti recenti
-        </SectionLabel>
-        {payments.length === 0 ? (
-          <EmptyState icon={Receipt}>Nessun pagamento ancora.</EmptyState>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            {payments.map((p) => (
-              <li key={p.id}>
-                <Card className="flex items-center justify-between gap-3">
-                  <span className="min-w-0">
-                    <span className="block font-medium">
-                      {formatAmount(p.amount_cents, p.currency)}
-                    </span>
-                    <span className="block truncate text-xs text-neutral-500">
-                      {p.client_id
-                        ? clientName.get(p.client_id) ?? "Cliente"
-                        : "—"}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-xs text-neutral-400">
-                    {p.status ?? "—"}
-                  </span>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        {/* Abbonamenti */}
+        <StaggerItem>
+          <section>
+            <SectionLabel right={<span className="text-xs text-faint">{subs.length}</span>}>
+              Abbonamenti
+            </SectionLabel>
+            {subs.length === 0 ? (
+              <EmptyState icon={CreditCard}>Nessun abbonamento ancora.</EmptyState>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {subs.map((s) => {
+                  const name = s.client_id
+                    ? clientName.get(s.client_id) ?? "Cliente"
+                    : "—";
+                  return (
+                    <li key={s.id}>
+                      <Row
+                        leading={
+                          name === "—" ? (
+                            <IconTile icon={CreditCard} tone="muted" />
+                          ) : (
+                            <Avatar name={name} />
+                          )
+                        }
+                        title={name}
+                        trailing={
+                          <span className="text-xs text-muted">{s.status ?? "—"}</span>
+                        }
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        </StaggerItem>
+
+        {/* Pagamenti */}
+        <StaggerItem>
+          <section>
+            <SectionLabel right={<span className="text-xs text-faint">{payments.length}</span>}>
+              Pagamenti recenti
+            </SectionLabel>
+            {payments.length === 0 ? (
+              <EmptyState icon={Receipt}>Nessun pagamento ancora.</EmptyState>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {payments.map((p) => (
+                  <li key={p.id}>
+                    <Row
+                      leading={<IconTile icon={Receipt} tone="muted" />}
+                      title={formatAmount(p.amount_cents, p.currency)}
+                      subtitle={
+                        p.client_id ? clientName.get(p.client_id) ?? "Cliente" : "—"
+                      }
+                      trailing={
+                        <span className="text-xs text-muted">{p.status ?? "—"}</span>
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </StaggerItem>
+      </Stagger>
     </Page>
   );
 }

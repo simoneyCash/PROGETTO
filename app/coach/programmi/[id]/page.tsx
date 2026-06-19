@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { Sparkles, TriangleAlert } from "@/components/ui/icons";
+import { Sparkles, TriangleAlert, Dumbbell } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import { ProgramEditor } from "@/components/ProgramEditor";
@@ -11,7 +11,10 @@ import {
   SectionLabel,
   Card,
   Banner,
+  IconTile,
+  Row,
 } from "@/components/ui/kit";
+import { Stagger, StaggerItem } from "@/components/ui/motion";
 
 type Exercise = {
   exercise_id: string;
@@ -74,47 +77,65 @@ export default async function ProgramReview({
 
   return (
     <Page>
-      <BackLink href={`/coach/clienti/${version.client_id}`}>
-        {client?.full_name ?? "Cliente"}
-      </BackLink>
+      <Stagger className="flex flex-col gap-6">
+        <StaggerItem>
+          <BackLink href={`/coach/clienti/${version.client_id}`}>
+            {client?.full_name ?? "Cliente"}
+          </BackLink>
+        </StaggerItem>
 
-      <PageHeader
-        eyebrow={isEditable ? "Revisione scheda" : "Scheda"}
-        title={isEditable ? "Revisiona la bozza" : c.title}
-        action={<ArtifactBadge status={version.status} />}
-      />
+        <StaggerItem>
+          <PageHeader
+            eyebrow={isEditable ? "Revisione scheda" : "Scheda"}
+            title={isEditable ? "Revisiona la bozza" : c.title}
+            action={<ArtifactBadge status={version.status} />}
+          />
+        </StaggerItem>
 
-      {version.generated_by_ai && isEditable && (
-        <Card tone="accent" className="-mt-3 flex items-start gap-3">
-          <Sparkles className="size-5 shrink-0 text-accent" />
-          <p className="text-sm text-neutral-300">
-            Bozza AI — modifica liberamente, poi pubblica. Il cliente non vede
-            nulla finché non pubblichi.
-          </p>
-        </Card>
-      )}
+        {version.generated_by_ai && isEditable && (
+          <StaggerItem>
+            <Card tone="accent" className="-mt-3 flex items-start gap-3">
+              <IconTile icon={Sparkles} />
+              <p className="text-sm text-muted">
+                Bozza AI — modifica liberamente, poi pubblica. Il cliente non
+                vede nulla finché non pubblichi.
+              </p>
+            </Card>
+          </StaggerItem>
+        )}
 
-      {published && (
-        <Banner tone="success">
-          Scheda pubblicata: ora è visibile al cliente.
-        </Banner>
-      )}
-      {saved && (
-        <Banner tone="success">
-          Modifiche salvate. Resta una bozza finché non pubblichi.
-        </Banner>
-      )}
-      {error && <Banner tone="error">{error}</Banner>}
+        {published && (
+          <StaggerItem>
+            <Banner tone="success">
+              Scheda pubblicata: ora è visibile al cliente.
+            </Banner>
+          </StaggerItem>
+        )}
+        {saved && (
+          <StaggerItem>
+            <Banner tone="success">
+              Modifiche salvate. Resta una bozza finché non pubblichi.
+            </Banner>
+          </StaggerItem>
+        )}
+        {error && (
+          <StaggerItem>
+            <Banner tone="error">{error}</Banner>
+          </StaggerItem>
+        )}
 
-      {isEditable ? (
-        <ProgramEditor
-          versionId={version.id}
-          initialContent={c}
-          exercises={exercises}
-        />
-      ) : (
-        <ReadOnlyProgram content={c} />
-      )}
+        {isEditable ? (
+          <StaggerItem>
+            <ProgramEditor
+              versionId={version.id}
+              initialContent={c}
+              exercises={exercises}
+            />
+          </StaggerItem>
+        ) : (
+          <ReadOnlyProgram content={c} />
+        )}
+      </Stagger>
     </Page>
   );
 }
@@ -122,65 +143,80 @@ export default async function ProgramReview({
 // Vista sola-lettura per le schede già pubblicate/archiviate.
 function ReadOnlyProgram({ content: c }: { content: ProgramContent }) {
   return (
-    <>
+    <Stagger className="flex flex-col gap-6">
       {c.summary && (
-        <p className="-mt-3 text-sm text-neutral-400">{c.summary}</p>
+        <StaggerItem>
+          <p className="-mt-3 text-sm text-muted">{c.summary}</p>
+        </StaggerItem>
       )}
 
       {c.health_flags?.length > 0 && (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
-          <p className="flex items-center gap-2 text-sm font-medium text-amber-300">
-            <TriangleAlert className="size-4" />
-            Da verificare (salute)
-          </p>
-          <ul className="mt-1 list-disc pl-5 text-sm text-amber-200/90">
-            {c.health_flags.map((f, i) => (
-              <li key={i}>{f}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <section className="flex flex-col gap-4">
-        <SectionLabel>Giorni</SectionLabel>
-        {c.days?.map((day, i) => (
-          <Card key={i}>
-            <div className="flex items-baseline justify-between">
-              <h2 className="font-semibold">{day.label}</h2>
-              <span className="text-xs text-neutral-500">{day.focus}</span>
-            </div>
-            <ul className="mt-3 flex flex-col gap-2">
-              {day.exercises?.map((ex, j) => (
-                <li key={j} className="text-sm">
-                  <span className="font-medium">{ex.exercise_name}</span>
-                  <span className="text-neutral-400">
-                    {" "}
-                    — {ex.sets}×{ex.reps}, rec {ex.rest_seconds}s
-                  </span>
-                  {ex.notes && (
-                    <span className="block text-xs text-neutral-500">
-                      {ex.notes}
-                    </span>
-                  )}
-                </li>
+        <StaggerItem>
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+            <p className="flex items-center gap-2 text-sm font-medium text-amber-300">
+              <TriangleAlert className="size-4 shrink-0" />
+              Da verificare (salute)
+            </p>
+            <ul className="mt-2 list-disc pl-5 text-sm text-amber-200/90 marker:text-amber-400/60">
+              {c.health_flags.map((f, i) => (
+                <li key={i}>{f}</li>
               ))}
             </ul>
-          </Card>
-        ))}
-      </section>
-
-      {c.coach_notes && (
-        <Card>
-          <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-            Note per il coach
-          </p>
-          <p className="mt-1 text-sm text-neutral-300">{c.coach_notes}</p>
-        </Card>
+          </div>
+        </StaggerItem>
       )}
 
-      <p className="text-center text-xs text-neutral-500">
-        Scheda pubblicata e visibile al cliente.
-      </p>
-    </>
+      <StaggerItem>
+        <section>
+          <SectionLabel>Giorni</SectionLabel>
+          <div className="flex flex-col gap-3">
+            {c.days?.map((day, i) => (
+              <Card key={i} className="flex flex-col gap-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="text-base font-semibold text-foreground">
+                    {day.label}
+                  </h2>
+                  <span className="shrink-0 text-xs text-faint">
+                    {day.focus}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {day.exercises?.map((ex, j) => (
+                    <Row
+                      key={j}
+                      leading={<IconTile icon={Dumbbell} tone="muted" />}
+                      title={ex.exercise_name}
+                      subtitle={ex.notes || undefined}
+                      trailing={
+                        <span className="text-xs tabular-nums text-muted">
+                          {ex.sets}×{ex.reps} · rec {ex.rest_seconds}s
+                        </span>
+                      }
+                    />
+                  ))}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      </StaggerItem>
+
+      {c.coach_notes && (
+        <StaggerItem>
+          <Card>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">
+              Note per il coach
+            </p>
+            <p className="mt-2 text-sm text-foreground">{c.coach_notes}</p>
+          </Card>
+        </StaggerItem>
+      )}
+
+      <StaggerItem>
+        <p className="text-center text-xs text-faint">
+          Scheda pubblicata e visibile al cliente.
+        </p>
+      </StaggerItem>
+    </Stagger>
   );
 }

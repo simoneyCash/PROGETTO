@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Plus, X } from "@/components/ui/icons";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { btn } from "@/components/ui/kit";
+import { cbtn } from "@/components/ui/client";
 import { logWorkout } from "@/app/cliente/actions";
 
 // =============================================================================
@@ -36,7 +36,7 @@ const STALE_MS = 18 * 60 * 60 * 1000; // riprese più vecchie di 18h = nuovo all
 const DEFAULT_REST = 90;
 
 const inputClass =
-  "w-20 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-2 text-center text-base text-neutral-100 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent";
+  "w-20 rounded-xl border border-border bg-surface-1 px-2 py-2 text-center text-[16px] font-semibold text-foreground outline-none transition-[border-color,box-shadow] focus:border-accent/40 focus:ring-2 focus:ring-[var(--ring)]";
 
 function fmt(sec: number) {
   const m = Math.floor(sec / 60);
@@ -227,8 +227,8 @@ export function WorkoutSession({
 
   return (
     <>
-      <p className="-mt-3 text-xs text-neutral-500">
-        Segna ripetizioni e peso, poi tocca <span className="text-accent">✓</span>{" "}
+      <p className="-mt-3 text-xs text-muted">
+        Segna ripetizioni e peso, poi tocca <span className="text-foreground">✓</span>{" "}
         per far partire il recupero. Tutto resta salvato sul telefono: se esci e
         rientri, ritrovi i tuoi dati.
       </p>
@@ -242,16 +242,16 @@ export function WorkoutSession({
           return (
             <div
               key={i}
-              className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+              className="rounded-3xl bg-surface-1 p-4 shadow-[var(--shadow-soft)]"
             >
               <div className="flex items-baseline justify-between gap-2">
-                <h2 className="font-semibold">{ex.exercise_name}</h2>
-                <span className="text-xs text-neutral-500">
+                <h2 className="font-bold text-foreground">{ex.exercise_name}</h2>
+                <span className="text-xs font-medium text-muted">
                   target {ex.sets}×{ex.reps}
                 </span>
               </div>
 
-              <div className="mt-1 flex items-center gap-2 text-[11px] text-neutral-600">
+              <div className="mt-1 flex items-center gap-2 text-[11px] text-faint">
                 <span>
                   {doneCount}/{row.length} serie
                 </span>
@@ -261,14 +261,14 @@ export function WorkoutSession({
               </div>
 
               <div className="mt-3 flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-neutral-600">
+                <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-faint">
                   <span className="w-8">Serie</span>
                   <span className="w-20 text-center">Ripetiz.</span>
                   <span className="w-20 text-center">Peso kg</span>
                 </div>
                 {row.map((cell, s) => (
                   <div key={s} className="flex items-center gap-2">
-                    <span className="w-8 text-sm text-neutral-400">{s + 1}</span>
+                    <span className="w-8 text-sm text-muted">{s + 1}</span>
                     <input
                       name={`reps_${i}_${s + 1}`}
                       type="number"
@@ -301,8 +301,8 @@ export function WorkoutSession({
                       }
                       className={`flex size-10 shrink-0 items-center justify-center rounded-xl border transition-colors ${
                         cell.done
-                          ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
-                          : "border-white/10 bg-white/[0.03] text-neutral-500 hover:border-accent/40 hover:text-accent"
+                          ? "border-transparent bg-accent text-accent-fg"
+                          : "border-border bg-surface-1 text-faint hover:text-foreground"
                       }`}
                     >
                       <Check className="size-5" />
@@ -312,7 +312,7 @@ export function WorkoutSession({
               </div>
 
               {ex.notes && (
-                <p className="mt-3 rounded-xl border border-accent/20 bg-accent/[0.06] px-3 py-2 text-sm text-neutral-200">
+                <p className="mt-3 rounded-2xl border border-[color-mix(in_srgb,var(--accent)_22%,transparent)] bg-[color-mix(in_srgb,var(--accent)_8%,var(--surface-1))] px-3 py-2 text-sm font-medium text-foreground">
                   {ex.notes}
                 </p>
               )}
@@ -321,7 +321,7 @@ export function WorkoutSession({
         })}
 
         <SubmitButton
-          className={`sticky bottom-4 mt-2 ${btn.primary}`}
+          className={`sticky bottom-4 mt-2 ${cbtn.primary}`}
           pendingText="Salvataggio…"
         >
           Completa allenamento
@@ -330,14 +330,17 @@ export function WorkoutSession({
 
       {/* Barra recupero: appare solo durante il riposo, in primo piano. */}
       {rest && (
-        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-accent/25 bg-[#0c0b08]/95 backdrop-blur-xl">
-          <div className="mx-auto w-full max-w-md px-6 py-4">
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface-1/95 shadow-[var(--shadow-soft-lg)] backdrop-blur-xl">
+          <div
+            className="mx-auto w-full max-w-md px-5 py-4"
+            style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[11px] uppercase tracking-wide text-accent/80">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
                   Recupero
                 </p>
-                <p className="font-serif text-4xl font-medium tabular-nums text-white">
+                <p className="font-mono text-4xl font-bold tabular-nums text-foreground">
                   {fmt(remaining)}
                 </p>
               </div>
@@ -345,20 +348,20 @@ export function WorkoutSession({
                 <button
                   type="button"
                   onClick={() => addRest(15)}
-                  className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white"
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-1 px-3.5 py-2.5 text-sm font-semibold text-foreground shadow-[var(--shadow-soft)] active:scale-95"
                 >
                   <Plus className="size-4" /> 15s
                 </button>
                 <button
                   type="button"
                   onClick={() => setRest(null)}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-accent-light to-accent px-4 py-2 text-sm font-semibold text-accent-ink"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-fg shadow-[0_10px_28px_-10px_var(--accent-glow)] active:scale-95"
                 >
                   <X className="size-4" /> Salta
                 </button>
               </div>
             </div>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--foreground)_8%,transparent)]">
               <div
                 className="h-full rounded-full bg-accent transition-[width] duration-300 ease-linear"
                 style={{ width: `${pct * 100}%` }}

@@ -1,5 +1,7 @@
 "use client";
 
+import { btn } from "@/components/ui/kit";
+
 // Boundary d'errore a livello di rotta (dentro il guscio). Mostra un messaggio
 // pulito + "Riprova" invece dell'errore grezzo di Next.
 export default function Error({ reset }: { error: Error; reset: () => void }) {
@@ -8,14 +10,10 @@ export default function Error({ reset }: { error: Error; reset: () => void }) {
       <h1 className="text-xl font-semibold tracking-tight">
         Qualcosa è andato storto
       </h1>
-      <p className="text-sm text-neutral-400">
+      <p className="text-sm text-muted">
         Riprova tra un istante. Se il problema continua, ricarica la pagina.
       </p>
-      <button
-        type="button"
-        onClick={reset}
-        className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-[#f0cd86]"
-      >
+      <button type="button" onClick={reset} className={btn.primary}>
         Riprova
       </button>
     </main>

@@ -5,7 +5,20 @@ import { publishNutritionPlan } from "../actions";
 import { ArtifactBadge } from "@/components/ui/StatusBadge";
 import { NutritionEditor, type NutritionContent } from "@/components/NutritionEditor";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { Page, BackLink, PageHeader, SectionLabel, Card, Banner, btn } from "@/components/ui/kit";
+import { Salad } from "@/components/ui/icons";
+import {
+  Page,
+  BackLink,
+  PageHeader,
+  SectionLabel,
+  Card,
+  Banner,
+  Stat,
+  Row,
+  EmptyState,
+  btn,
+} from "@/components/ui/kit";
+import { Stagger, StaggerItem } from "@/components/ui/motion";
 
 type Plan = {
   id: string;
@@ -46,56 +59,55 @@ function PlanView({ c }: { c: NutritionContent }) {
   ].filter(Boolean) as { label: string; value: string }[];
 
   return (
-    <div className="flex flex-col gap-3">
-      {c.summary && <p className="text-sm text-neutral-300">{c.summary}</p>}
+    <div className="flex flex-col gap-6">
+      {c.summary && <p className="text-sm text-muted">{c.summary}</p>}
 
       {macros.length === 0 && c.meals.length === 0 && (
-        <p className="text-sm text-neutral-500">Questo piano è ancora vuoto.</p>
+        <EmptyState icon={Salad}>Questo piano è ancora vuoto.</EmptyState>
       )}
 
       {macros.length > 0 && (
-        <div className="grid grid-cols-4 gap-2 text-center">
+        <div className="grid grid-cols-4 gap-3">
           {macros.map((m) => (
-            <div
-              key={m.label}
-              className="rounded-xl border border-white/10 bg-white/[0.02] px-2 py-3"
-            >
-              <div className="text-base font-semibold">{m.value}</div>
-              <div className="mt-0.5 text-[10px] uppercase tracking-wide text-neutral-500">
-                {m.label}
-              </div>
-            </div>
+            <Stat key={m.label} label={m.label} value={m.value} />
           ))}
         </div>
       )}
 
-      {c.meals.map((meal, i) => (
-        <Card key={i}>
-          <h3 className="font-semibold">{meal.name || "Pasto"}</h3>
-          <ul className="mt-2 flex flex-col gap-1.5">
-            {meal.items.map((it, j) => (
-              <li key={j} className="flex justify-between gap-3 text-sm">
-                <span className="text-neutral-200">{it.food}</span>
-                <span className="shrink-0 text-neutral-500">{it.quantity}</span>
-              </li>
-            ))}
-          </ul>
-          {meal.notes && (
-            <p className="mt-2 border-t border-white/10 pt-2 text-xs text-neutral-400">
-              {meal.notes}
-            </p>
-          )}
-        </Card>
-      ))}
+      {c.meals.length > 0 && (
+        <div className="flex flex-col gap-3">
+          {c.meals.map((meal, i) => (
+            <Card key={i} className="flex flex-col gap-3">
+              <h3 className="text-base font-semibold">{meal.name || "Pasto"}</h3>
+              <div className="flex flex-col gap-2">
+                {meal.items.map((it, j) => (
+                  <Row
+                    key={j}
+                    title={it.food}
+                    trailing={
+                      <span className="text-sm tabular-nums text-muted">
+                        {it.quantity}
+                      </span>
+                    }
+                  />
+                ))}
+              </div>
+              {meal.notes && (
+                <p className="border-t border-border pt-3 text-xs text-muted">
+                  {meal.notes}
+                </p>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
 
       {c.coach_notes && (
-        <Card>
-          <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <Card className="flex flex-col gap-1.5">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">
             Note del coach (private)
           </p>
-          <p className="mt-1.5 whitespace-pre-wrap text-sm text-neutral-300">
-            {c.coach_notes}
-          </p>
+          <p className="whitespace-pre-wrap text-sm text-muted">{c.coach_notes}</p>
         </Card>
       )}
     </div>
@@ -138,60 +150,84 @@ export default async function NutritionDetail({
 
   return (
     <Page>
-      <BackLink href="/coach/nutrizione">Tutti i piani</BackLink>
+      <Stagger className="flex flex-col gap-6">
+        <StaggerItem>
+          <BackLink href="/coach/nutrizione">Tutti i piani</BackLink>
+        </StaggerItem>
 
-      <PageHeader
-        eyebrow={client?.full_name ?? "Cliente"}
-        title={p.title ?? "Senza titolo"}
-        action={<ArtifactBadge status={p.status} gender="m" />}
-      />
+        <StaggerItem>
+          <PageHeader
+            eyebrow={client?.full_name ?? "Cliente"}
+            title={p.title ?? "Senza titolo"}
+            action={<ArtifactBadge status={p.status} gender="m" />}
+          />
+        </StaggerItem>
 
-      {published && (
-        <Banner tone="success">Piano pubblicato: ora è visibile al cliente.</Banner>
-      )}
-      {saved && <Banner tone="success">Modifiche salvate.</Banner>}
-      {error && <Banner tone="error">{error}</Banner>}
+        {published && (
+          <StaggerItem>
+            <Banner tone="success">Piano pubblicato: ora è visibile al cliente.</Banner>
+          </StaggerItem>
+        )}
+        {saved && (
+          <StaggerItem>
+            <Banner tone="success">Modifiche salvate.</Banner>
+          </StaggerItem>
+        )}
+        {error && (
+          <StaggerItem>
+            <Banner tone="error">{error}</Banner>
+          </StaggerItem>
+        )}
 
-      {/* Bozza strutturata (AI o editor): editor se modificabile, sola lettura se pubblicato */}
-      {structured ? (
-        isPublished ? (
-          <section>
-            <SectionLabel>Piano</SectionLabel>
-            <PlanView c={structured} />
-          </section>
+        {/* Bozza strutturata (AI o editor): editor se modificabile, sola lettura se pubblicato */}
+        {structured ? (
+          isPublished ? (
+            <StaggerItem>
+              <section>
+                <SectionLabel>Piano</SectionLabel>
+                <PlanView c={structured} />
+              </section>
+            </StaggerItem>
+          ) : (
+            <StaggerItem>
+              <NutritionEditor planId={p.id} initialContent={structured} />
+            </StaggerItem>
+          )
         ) : (
-          <NutritionEditor planId={p.id} initialContent={structured} />
-        )
-      ) : (
-        // Vecchio piano a testo libero
-        <>
-          <section>
-            <SectionLabel>Contenuto</SectionLabel>
-            <Card>
-              {body ? (
-                <p className="whitespace-pre-wrap text-sm text-neutral-200">{body}</p>
-              ) : (
-                <p className="text-sm text-neutral-500">
-                  Nessun contenuto. Genera una bozza con l&apos;AI dalla pagina
-                  Nutrizione.
-                </p>
-              )}
-            </Card>
-          </section>
+          // Vecchio piano a testo libero
+          <>
+            <StaggerItem>
+              <section>
+                <SectionLabel>Contenuto</SectionLabel>
+                {body ? (
+                  <Card>
+                    <p className="whitespace-pre-wrap text-sm text-foreground">{body}</p>
+                  </Card>
+                ) : (
+                  <EmptyState icon={Salad}>
+                    Nessun contenuto. Genera una bozza con l&apos;AI dalla pagina
+                    Nutrizione.
+                  </EmptyState>
+                )}
+              </section>
+            </StaggerItem>
 
-          {!isPublished && (
-            <form action={publishNutritionPlan}>
-              <input type="hidden" name="plan_id" value={p.id} />
-              <SubmitButton className={`${btn.primary} w-full`} pendingText="Pubblico…">
-                Approva e pubblica
-              </SubmitButton>
-              <p className="mt-2 text-xs text-neutral-500">
-                Finché è una bozza, il cliente non la vede.
-              </p>
-            </form>
-          )}
-        </>
-      )}
+            {!isPublished && (
+              <StaggerItem>
+                <form action={publishNutritionPlan} className="flex flex-col gap-2">
+                  <input type="hidden" name="plan_id" value={p.id} />
+                  <SubmitButton className={`${btn.primary} w-full`} pendingText="Pubblico…">
+                    Approva e pubblica
+                  </SubmitButton>
+                  <p className="text-xs text-faint">
+                    Finché è una bozza, il cliente non la vede.
+                  </p>
+                </form>
+              </StaggerItem>
+            )}
+          </>
+        )}
+      </Stagger>
     </Page>
   );
 }

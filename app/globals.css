@@ -1,48 +1,221 @@
 @import "tailwindcss";
 
-/* Dark-mode-first: a `dark` class on <html> opts in to the dark theme. */
-@custom-variant dark (&:where(.dark, .dark *));
+/* =========================================================================
+   COACH AI — TEMA "Linear" (da DESIGN.md). Dark-first, palette NEUTRA
+   (nessun accento cromatico). Fonte UNICA dei token: niente valori hardcoded.
+   Ruoli colore corretti a mano (l'estrazione li aveva etichettati male).
+   ========================================================================= */
 
 :root {
-  /* "Premium App UI": superficie near-black, accento oro, testo bianco. */
-  --background: #050605;
-  --foreground: #ffffff;
+  color-scheme: dark;
+
+  /* — Superfici (dark) — */
+  --background: #08090a; /* sfondo app / surface scura */
+  --surface-1: #0f1011; /* pannello elevato (card) */
+  --surface-2: #16171a; /* elevazione 2 (popover/menu) */
+
+  /* — Testo — */
+  --foreground: #f7f8f8; /* testo primario */
+  --muted: #8a8f98; /* testo secondario */
+  --faint: #62666d; /* testo terziario / disabilitato */
+
+  /* — Accento ENERGIA: verde elettrico (CTA, progressi, momenti chiave) — */
+  --accent: #2fe08a;
+  --accent-hover: #4ff0a3;
+  --accent-fg: #05130c; /* testo scuro sul verde */
+  --accent-glow: rgba(47, 224, 138, 0.4);
+
+  /* — Azione neutra (bottone chiaro su scuro), per azioni secondarie — */
+  --primary: #f7f8f8;
+  --primary-hover: #e6e8ea;
+  --primary-fg: #08090a; /* testo scuro sul bottone chiaro */
+
+  /* — Bordi hairline + focus neutro — */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --ring: rgba(255, 255, 255, 0.28);
+
+  /* — Stati semantici (nuovi stati ammessi dai vincoli) — */
+  --success: #4cb782;
+  --error: #eb5757;
+  --warning: #f2c94c;
 }
 
 @theme inline {
+  /* COLORI → bg-*, text-*, border-* */
   --color-background: var(--background);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
 
-  /* Accento di marca: ORO champagne. `accent` = oro (testo/icone/attivo e
-     fondo dei pulsanti pieni); `accent-ink` = testo scuro SU oro; `lime` =
-     terziario, usato raramente per contrasti di supporto. */
-  --color-accent: #e7bf70;
-  --color-accent-light: #f8dda2; /* alto del gradiente sui pulsanti */
-  --color-accent-strong: #e7bf70;
-  --color-accent-ink: #18130c;
-  --color-lime: #c1ed74;
-
-  /* Tipografia: titoli serif (Georgia), corpo/etichette sans di sistema
-     (= SF Pro su iPhone/Mac). Nessun font esterno da scaricare. */
-  --font-sans: -apple-system, system-ui, "SF Pro Display", "Segoe UI", Roboto,
+  /* FONT → font-sans / font-mono.
+     Inter self-hosted (offline PWA) via next/font in app/layout.tsx.
+     Berkeley Mono è a pagamento → fallback reale = ui-monospace. */
+  --font-sans: var(--font-inter), -apple-system, system-ui, "Segoe UI", Roboto,
     Helvetica, Arial, sans-serif;
-  --font-serif: Georgia, "Times New Roman", serif;
+  --font-mono: "Berkeley Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* PESI (Inter Variable: 300/510/590) → font-light/medium/semibold */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 510;
+  --font-weight-semibold: 590;
+
+  /* SCALA TIPOGRAFICA — distillata dai 47 stili del file → text-xs … text-6xl */
+  --text-xs: 12px;
+  --text-xs--line-height: 1.4;
+  --text-sm: 13px;
+  --text-sm--line-height: 1.5;
+  --text-base: 14px;
+  --text-base--line-height: 1.5;
+  --text-lg: 15px;
+  --text-lg--line-height: 1.6;
+  --text-xl: 17px;
+  --text-xl--line-height: 1.6;
+  --text-2xl: 20px;
+  --text-2xl--line-height: 1.33;
+  --text-3xl: 24px;
+  --text-3xl--line-height: 1.33;
+  --text-4xl: 32px;
+  --text-4xl--line-height: 1.13;
+  --text-5xl: 48px;
+  --text-5xl--line-height: 1;
+  --text-6xl: 64px;
+  --text-6xl--line-height: 1;
+
+  /* RAGGI — famiglia 2/4/6/8/12/full → rounded-* */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px; /* card/contenitori */
+  --radius-xl: 12px; /* card/contenitori */
+  --radius-full: 9999px;
+
+  /* PROFONDITÀ — un solo sistema (box-shadow osservati nel file) */
+  --shadow-line: 0 1px 0 0 rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 1px 0 0 rgba(0, 0, 0, 0.03), 0 2px 4px 0 rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 8px 24px 0 rgba(0, 0, 0, 0.5);
+
+  /* MOTION — minimal, easing ease */
+  --ease-standard: ease;
 }
 
-html {
-  color-scheme: dark;
+/* =========================================================================
+   APP CLIENTE — TEMA CHIARO (consumer, "arioso"). Scope: .theme-cliente sul
+   guscio cliente. Ridefinisce gli STESSI token → tutte le utility tokenizzate
+   (bg-background/surface-1, text-foreground/muted, border-border, text-accent…)
+   diventano chiare SOLO dentro l'area cliente. La dashboard coach resta scura.
+   In più: palette DATI colorata (calorie/macro) + ombre morbide reali.
+   ========================================================================= */
+.theme-cliente {
+  color-scheme: light;
+
+  /* — Superfici (light) — */
+  --background: #f5f6f8; /* canvas app, grigio freddo tenue */
+  --surface-1: #ffffff; /* card */
+  --surface-2: #ffffff; /* elevazione 2 */
+
+  /* — Testo — */
+  --foreground: #0d121c; /* quasi-nero, leggermente blu */
+  --muted: #69707d; /* secondario */
+  --faint: #a2a9b4; /* terziario / placeholder */
+
+  /* — Accento ENERGIA: verde di marca, scurito per leggibilità su bianco — */
+  --accent: #0a9d5a;
+  --accent-hover: #08864d;
+  --accent-fg: #ffffff;
+  --accent-glow: rgba(10, 157, 90, 0.3);
+
+  /* — Azione neutra scura su chiaro — */
+  --primary: #0d121c;
+  --primary-hover: #1c2330;
+  --primary-fg: #ffffff;
+
+  /* — Bordi hairline + focus — */
+  --border: rgba(13, 18, 28, 0.08);
+  --border-subtle: rgba(13, 18, 28, 0.05);
+  --ring: rgba(10, 157, 90, 0.35);
+
+  /* — Stati semantici — */
+  --success: #0a9d5a;
+  --error: #e5484d;
+  --warning: #d9930a;
+
+  /* — Palette DATI (consumer): calorie + macro + streak — */
+  --c-cal: #4f7cff; /* blu, metrica principale */
+  --c-carbs: #12b3a6; /* teal */
+  --c-fat: #8b5cf6; /* viola */
+  --c-protein: #f59e0b; /* ambra */
+  --c-streak: #f97316; /* arancio (serie/streak) */
+
+  /* — Ombre MORBIDE reali (su chiaro) — */
+  --shadow-soft: 0 1px 2px rgba(13, 18, 28, 0.04),
+    0 10px 30px -14px rgba(13, 18, 28, 0.16);
+  --shadow-soft-lg: 0 2px 4px rgba(13, 18, 28, 0.05),
+    0 20px 48px -20px rgba(13, 18, 28, 0.22);
+
+  background: var(--background);
+  color: var(--foreground);
+}
+.theme-cliente ::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--foreground);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-feature-settings: "cv01", "ss03"; /* feature Inter dal file */
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Tocco di marca discreto: selezione del testo in oro. */
 ::selection {
-  background: rgba(231, 191, 112, 0.3);
+  background: rgba(47, 224, 138, 0.28); /* selezione verde accento */
   color: #fff;
+}
+
+/* ---- Motion: keyframes condivisi (le interazioni ricche usano Framer Motion) -- */
+@keyframes drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6%, 4%) scale(1.12); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes shine {
+  0% { transform: translateX(-130%); }
+  60%, 100% { transform: translateX(260%); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
+
+/* Aurora ambientale: bagliore verde che deriva dietro al contenuto (solo CSS). */
+.aurora {
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 60%;
+  background: radial-gradient(50% 60% at 30% 30%, rgba(47, 224, 138, 0.18), transparent 70%),
+    radial-gradient(45% 55% at 80% 20%, rgba(47, 224, 138, 0.1), transparent 70%);
+  filter: blur(36px);
+  animation: drift 14s ease-in-out infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurora { animation: none; }
 }

@@ -7,10 +7,14 @@ import {
   Page,
   BackLink,
   PageHeader,
-  Card,
+  SectionLabel,
+  Stat,
+  Row,
+  Avatar,
   EmptyState,
   Banner,
 } from "@/components/ui/kit";
+import { Stagger, StaggerItem, AnimatedNumber } from "@/components/ui/motion";
 
 type ClientRow = { id: string; full_name: string };
 
@@ -57,53 +61,93 @@ export default async function CoachProgress() {
     }
   }
 
+  const totalWorkouts = clients.reduce(
+    (sum, c) => sum + (workoutsByClient.get(c.id) ?? 0),
+    0,
+  );
+  const totalAnswered = clients.reduce(
+    (sum, c) => sum + (answeredByClient.get(c.id) ?? 0),
+    0,
+  );
+
   return (
     <Page>
-      <BackLink href="/coach">Dashboard</BackLink>
+      <Stagger className="flex flex-col gap-6">
+        <StaggerItem>
+          <BackLink href="/coach">Dashboard</BackLink>
+        </StaggerItem>
 
-      <PageHeader eyebrow="Attività dei clienti nel tempo" title="Progressi" />
+        <StaggerItem>
+          <PageHeader
+            eyebrow="Attività dei clienti nel tempo"
+            title="Progressi"
+          />
+        </StaggerItem>
 
-      <Banner tone="info">
-        I numeri crescono quando il cliente <b>logga gli allenamenti</b> e{" "}
-        <b>risponde ai check-in</b> dal suo portale (in arrivo). Più avanti qui
-        aggiungeremo grafici e analisi AI.
-      </Banner>
+        <StaggerItem>
+          <Banner tone="info">
+            I numeri crescono quando il cliente <b>logga gli allenamenti</b> e{" "}
+            <b>risponde ai check-in</b> dal suo portale (in arrivo). Più avanti
+            qui aggiungeremo grafici e analisi AI.
+          </Banner>
+        </StaggerItem>
 
-      <section>
-        {clients.length === 0 ? (
-          <EmptyState icon={LineChart}>
-            Aggiungi prima un cliente in{" "}
-            <Link href="/coach/clienti" className="text-accent underline">
-              Clienti
-            </Link>
-            .
-          </EmptyState>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            {clients.map((c) => (
-              <li key={c.id}>
-                <Card>
-                  <span className="block font-medium">{c.full_name}</span>
-                  <div className="mt-2 flex gap-4 text-xs text-neutral-400">
-                    <span>
-                      <b className="text-neutral-200">
-                        {workoutsByClient.get(c.id) ?? 0}
-                      </b>{" "}
-                      allenamenti
-                    </span>
-                    <span>
-                      <b className="text-neutral-200">
-                        {answeredByClient.get(c.id) ?? 0}
-                      </b>{" "}
-                      check-in risposti
-                    </span>
-                  </div>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        <StaggerItem>
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label="Clienti" value={<AnimatedNumber value={clients.length} />} />
+            <Stat
+              label="Allenamenti"
+              value={<AnimatedNumber value={totalWorkouts} />}
+            />
+            <Stat
+              label="Check-in"
+              value={<AnimatedNumber value={totalAnswered} />}
+            />
+          </div>
+        </StaggerItem>
+
+        <StaggerItem>
+          <section>
+            <SectionLabel>Per cliente</SectionLabel>
+            {clients.length === 0 ? (
+              <EmptyState icon={LineChart}>
+                Aggiungi prima un cliente in{" "}
+                <Link
+                  href="/coach/clienti"
+                  className="text-foreground underline"
+                >
+                  Clienti
+                </Link>
+                .
+              </EmptyState>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {clients.map((c) => (
+                  <li key={c.id}>
+                    <Row
+                      leading={<Avatar name={c.full_name} />}
+                      title={c.full_name}
+                      subtitle={
+                        <>
+                          <b className="text-foreground">
+                            {workoutsByClient.get(c.id) ?? 0}
+                          </b>{" "}
+                          allenamenti
+                          <span className="px-1.5 text-faint">·</span>
+                          <b className="text-foreground">
+                            {answeredByClient.get(c.id) ?? 0}
+                          </b>{" "}
+                          check-in risposti
+                        </>
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </StaggerItem>
+      </Stagger>
     </Page>
   );
 }

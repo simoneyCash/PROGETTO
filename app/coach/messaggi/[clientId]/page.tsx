@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
-import { Page, BackLink, PageHeader, EmptyState, btn, field } from "@/components/ui/kit";
+import { Page, BackLink, PageHeader, EmptyState, Avatar, btn, field } from "@/components/ui/kit";
+import { Stagger, StaggerItem } from "@/components/ui/motion";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { MessageCircle } from "@/components/ui/icons";
 import { sendMessage } from "../actions";
@@ -50,55 +51,69 @@ export default async function CoachThread({
 
   return (
     <Page>
-      <BackLink href="/coach/messaggi">Conversazioni</BackLink>
+      <Stagger className="flex flex-1 flex-col gap-6">
+        <StaggerItem>
+          <BackLink href="/coach/messaggi">Conversazioni</BackLink>
+        </StaggerItem>
 
-      <PageHeader title={client.full_name} />
+        <StaggerItem>
+          <PageHeader
+            title={client.full_name}
+            action={<Avatar name={client.full_name} />}
+          />
+        </StaggerItem>
 
-      {/* Thread */}
-      <section className="flex flex-1 flex-col gap-3">
-        {messages.length === 0 && (
-          <EmptyState icon={MessageCircle}>
-            Nessun messaggio. Scrivi il primo qui sotto.
-          </EmptyState>
-        )}
-        {messages.map((m) => {
-          const fromStaff = m.sender_role === "coach" || m.sender_role === "admin";
-          return (
-            <div
-              key={m.id}
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${
-                fromStaff
-                  ? "self-end bg-accent text-accent-ink"
-                  : "self-start bg-white/5 text-neutral-200"
-              }`}
-            >
-              <p className="whitespace-pre-wrap text-sm">{m.body}</p>
-              <p
-                className={`mt-1 text-[10px] ${
-                  fromStaff ? "text-accent-ink/65" : "text-neutral-500"
-                }`}
-              >
-                {formatTime(m.created_at)}
-              </p>
-            </div>
-          );
-        })}
-      </section>
+        {/* Thread */}
+        <StaggerItem className="flex flex-1 flex-col">
+          <section className="flex flex-1 flex-col gap-3">
+            {messages.length === 0 && (
+              <EmptyState icon={MessageCircle}>
+                Nessun messaggio. Scrivi il primo qui sotto.
+              </EmptyState>
+            )}
+            {messages.map((m) => {
+              const fromStaff =
+                m.sender_role === "coach" || m.sender_role === "admin";
+              return (
+                <div
+                  key={m.id}
+                  className={`max-w-[85%] rounded-xl px-3.5 py-2.5 ${
+                    fromStaff
+                      ? "self-end bg-primary text-primary-fg"
+                      : "self-start border border-border bg-surface-1 text-foreground"
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap text-sm">{m.body}</p>
+                  <p
+                    className={`mt-1 text-xs ${
+                      fromStaff ? "text-primary-fg/65" : "text-faint"
+                    }`}
+                  >
+                    {formatTime(m.created_at)}
+                  </p>
+                </div>
+              );
+            })}
+          </section>
+        </StaggerItem>
 
-      {/* Composer */}
-      <form action={sendMessage} className="flex gap-2">
-        <input type="hidden" name="client_id" value={client.id} />
-        <input
-          name="body"
-          required
-          autoComplete="off"
-          placeholder="Scrivi un messaggio…"
-          className={`${field} flex-1`}
-        />
-        <SubmitButton className={btn.primary} pendingText="Invio…">
-          Invia
-        </SubmitButton>
-      </form>
+        {/* Composer */}
+        <StaggerItem>
+          <form action={sendMessage} className="flex items-center gap-2">
+            <input type="hidden" name="client_id" value={client.id} />
+            <input
+              name="body"
+              required
+              autoComplete="off"
+              placeholder="Scrivi un messaggio…"
+              className={`flex-1 ${field}`}
+            />
+            <SubmitButton className={btn.primary} pendingText="Invio…">
+              Invia
+            </SubmitButton>
+          </form>
+        </StaggerItem>
+      </Stagger>
     </Page>
   );
 }

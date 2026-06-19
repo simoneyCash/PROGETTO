@@ -13,7 +13,7 @@ export function ActivationForm({ token }: { token: string }) {
       <input type="hidden" name="token" value={token} />
 
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-neutral-300">Scegli una password</span>
+        <span className="text-foreground">Scegli una password</span>
         <input
           name="password"
           type="password"
@@ -26,7 +26,7 @@ export function ActivationForm({ token }: { token: string }) {
       </label>
 
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-neutral-300">Ripeti la password</span>
+        <span className="text-foreground">Ripeti la password</span>
         <input
           name="confirm"
           type="password"

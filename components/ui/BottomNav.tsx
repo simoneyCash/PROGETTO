@@ -47,30 +47,49 @@ const CLIENTE_ITEMS: NavItem[] = [
 export function BottomNav({ variant }: { variant: "coach" | "cliente" }) {
   const pathname = usePathname();
   const items = variant === "coach" ? COACH_ITEMS : CLIENTE_ITEMS;
+  const cliente = variant === "cliente";
+  // Tema scuro (coach): pillola bianca tenue, attivo = foreground.
+  // Tema chiaro (cliente): pillola verde tenue, attivo = accento verde.
+  const navCls = cliente
+    ? "shrink-0 border-t border-border bg-surface-1/85 backdrop-blur-xl"
+    : "shrink-0 border-t border-border bg-background/90 backdrop-blur";
   return (
-    <nav className="shrink-0 border-t border-white/10 bg-neutral-950/90 backdrop-blur">
+    <nav className={navCls} style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="mx-auto flex w-full max-w-md items-stretch">
         {items.map((it) => {
           const base = it.match ?? it.href;
           const active = it.exact
             ? pathname === it.href
             : pathname === base || pathname.startsWith(base + "/");
+          const labelCls = active
+            ? cliente
+              ? "text-accent"
+              : "text-foreground"
+            : "text-faint hover:text-muted";
+          const pillCls = active
+            ? cliente
+              ? "bg-[color-mix(in_srgb,var(--accent)_14%,transparent)]"
+              : "bg-white/[0.08]"
+            : "";
           return (
             <Link
               key={it.href}
               href={it.href}
               aria-current={active ? "page" : undefined}
-              className={`relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] transition-colors ${
-                active
-                  ? "font-medium text-accent"
-                  : "text-neutral-500 hover:text-neutral-300"
-              }`}
+              className={`flex flex-1 flex-col items-center gap-1 py-2 text-[11px] transition-colors ${labelCls}`}
             >
-              {active && (
-                <span className="absolute inset-x-[30%] top-0 h-0.5 rounded-full bg-accent" />
-              )}
-              <it.icon className="size-5" aria-hidden="true" />
-              <span>{it.label}</span>
+              <span
+                className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${pillCls}`}
+              >
+                <it.icon className="size-5" aria-hidden="true" />
+              </span>
+              <span
+                className={
+                  active ? (cliente ? "font-semibold" : "font-medium") : ""
+                }
+              >
+                {it.label}
+              </span>
             </Link>
           );
         })}

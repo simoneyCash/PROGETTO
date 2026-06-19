@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Users } from "@/components/ui/icons";
+import { Users, Plus, ChevronRight } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import { addClient } from "../actions";
@@ -9,12 +9,15 @@ import {
   BackLink,
   SectionLabel,
   Card,
+  Row,
+  Avatar,
   EmptyState,
   Banner,
   btn,
   field,
 } from "@/components/ui/kit";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Stagger, StaggerItem, AnimatedNumber } from "@/components/ui/motion";
 
 type ClientRow = {
   id: string;
@@ -44,70 +47,82 @@ export default async function CoachClients({
 
   return (
     <Page>
-      <BackLink href="/coach">Dashboard</BackLink>
+      <Stagger className="flex flex-col gap-6">
+        <StaggerItem>
+          <BackLink href="/coach">Dashboard</BackLink>
+        </StaggerItem>
 
-      <PageHeader eyebrow="Area coach" title="Clienti" />
+        <StaggerItem>
+          <PageHeader eyebrow="Area coach" title="Clienti" />
+        </StaggerItem>
 
-      {/* Nuovo cliente */}
-      <section>
-        <SectionLabel>Nuovo cliente</SectionLabel>
-        <form action={addClient} className="flex flex-col gap-3">
-          {error && <Banner tone="error">{error}</Banner>}
-          <input
-            name="full_name"
-            placeholder="Nome e cognome"
-            required
-            className={field}
-          />
-          <input
-            name="email"
-            type="email"
-            placeholder="Email (opzionale)"
-            className={field}
-          />
-          <SubmitButton className={btn.primary} pendingText="Aggiungo…">
-            Aggiungi cliente
-          </SubmitButton>
-        </form>
-      </section>
+        {/* Nuovo cliente */}
+        <StaggerItem>
+          <section>
+            <SectionLabel>Nuovo cliente</SectionLabel>
+            <Card>
+              <form action={addClient} className="flex flex-col gap-3">
+                {error && <Banner tone="error">{error}</Banner>}
+                <input
+                  name="full_name"
+                  placeholder="Nome e cognome"
+                  required
+                  className={field}
+                />
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Email (opzionale)"
+                  className={field}
+                />
+                <SubmitButton className={btn.primary} pendingText="Aggiungo…">
+                  <Plus className="size-5" />
+                  Aggiungi cliente
+                </SubmitButton>
+              </form>
+            </Card>
+          </section>
+        </StaggerItem>
 
-      {/* Lista clienti */}
-      <section>
-        <SectionLabel>
-          I tuoi clienti{" "}
-          <span className="text-neutral-500">({list.length})</span>
-        </SectionLabel>
-        {list.length === 0 ? (
-          <EmptyState icon={Users}>
-            Nessun cliente ancora. Aggiungine uno qui sopra.
-          </EmptyState>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            {list.map((c) => (
-              <li key={c.id}>
-                <Card
-                  href={`/coach/clienti/${c.id}`}
-                  className="flex items-center justify-between gap-3"
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">
-                      {c.full_name}
-                    </span>
-                    {c.email && (
-                      <span className="block truncate text-xs text-neutral-500">
-                        {c.email}
-                      </span>
-                    )}
-                  </span>
-                  <span className="shrink-0 text-xs text-neutral-500">
-                    {c.status} ›
-                  </span>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        {/* Lista clienti */}
+        <StaggerItem>
+          <section>
+            <SectionLabel
+              right={
+                <span className="text-xs text-faint">
+                  <AnimatedNumber value={list.length} />
+                </span>
+              }
+            >
+              I tuoi clienti
+            </SectionLabel>
+            {list.length === 0 ? (
+              <EmptyState icon={Users}>
+                Nessun cliente ancora. Aggiungine uno qui sopra.
+              </EmptyState>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {list.map((c) => (
+                  <li key={c.id}>
+                    <Row
+                      href={`/coach/clienti/${c.id}`}
+                      leading={<Avatar name={c.full_name} />}
+                      title={c.full_name}
+                      subtitle={c.email ?? undefined}
+                      trailing={
+                        <>
+                          <span className="text-xs text-faint">{c.status}</span>
+                          <ChevronRight className="size-4" />
+                        </>
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </StaggerItem>
+      </Stagger>
     </Page>
   );
 }

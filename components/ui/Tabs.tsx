@@ -27,7 +27,7 @@ export function Tabs({
       {/* La barra estende la linea di fondo a tutta la larghezza della main (p-6). */}
       <div
         role="tablist"
-        className="-mx-6 flex gap-1 overflow-x-auto border-b border-neutral-800 px-6"
+        className="-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4"
       >
         {tabs.map((t) => {
           const on = t.key === active;
@@ -40,13 +40,13 @@ export function Tabs({
               onClick={() => setActive(t.key)}
               className={`relative shrink-0 px-3 py-2.5 text-sm font-medium transition-colors ${
                 on
-                  ? "text-accent"
-                  : "text-neutral-400 hover:text-neutral-200"
+                  ? "text-foreground"
+                  : "text-muted hover:text-foreground"
               }`}
             >
               {t.label}
               {on && (
-                <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent" />
+                <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-foreground" />
               )}
             </button>
           );

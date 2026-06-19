@@ -15,19 +15,20 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, isStaff } from "@/lib/supabase/profile";
 import { LogoutButton } from "@/components/LogoutButton";
-import { Page, PageHeader, SectionLabel, Card, IconTile } from "@/components/ui/kit";
+import {
+  Page,
+  PageHeader,
+  SectionLabel,
+  Card,
+  IconTile,
+  Stat,
+  Row,
+  Avatar,
+} from "@/components/ui/kit";
+import { Stagger, StaggerItem, AnimatedNumber } from "@/components/ui/motion";
 
 // Stati "bozza" di un artefatto: da rivedere/approvare (non ancora pubblicato).
 const PENDING = ["draft", "pending_review", "approved"];
-
-// Iniziali per l'avatar (max 2 lettere).
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("") || "?";
 
 type Section = {
   href?: string;
@@ -157,62 +158,79 @@ export default async function CoachHome() {
     },
   ];
 
+  const pendingArtifacts = pendingPrograms + pendingPlans;
+
   return (
     <Page>
-      <PageHeader
-        eyebrow="Area coach"
-        title={`Ciao${firstName ? `, ${firstName}` : ""}`}
-        action={<LogoutButton />}
-      />
+      <Stagger className="flex flex-col gap-6">
+        <StaggerItem>
+          <PageHeader
+            eyebrow="Area coach"
+            title={`Ciao${firstName ? `, ${firstName}` : ""}`}
+            action={<LogoutButton />}
+          />
+        </StaggerItem>
+
+        {/* Sintesi (KPI) */}
+        <StaggerItem className="grid grid-cols-3 gap-3">
+          <Stat
+            href="/coach/clienti"
+            label="Clienti"
+            value={<AnimatedNumber value={clientCount} />}
+          />
+          <Stat
+            href="/coach/clienti"
+            label="Da approvare"
+            value={<AnimatedNumber value={pendingArtifacts} />}
+            tone={pendingArtifacts > 0 ? "accent" : "default"}
+          />
+          <Stat
+            href="/coach/checkin"
+            label="Da rivedere"
+            value={<AnimatedNumber value={answeredCheckins} />}
+            tone={answeredCheckins > 0 ? "accent" : "default"}
+          />
+        </StaggerItem>
 
       {/* Da fare */}
-      {todos.length > 0 ? (
-        <Card tone="accent">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold">Da fare</span>
-            <span className="flex size-5 items-center justify-center rounded-full bg-accent/20 text-xs font-medium text-accent">
-              {todos.length}
-            </span>
-          </div>
-          <ul className="mt-3 flex flex-col gap-3">
+      <StaggerItem><section>
+        <SectionLabel>Da fare</SectionLabel>
+        {todos.length > 0 ? (
+          <div className="flex flex-col gap-2">
             {todos.map((t) => (
-              <li key={t.label}>
-                <Link
-                  href={t.href}
-                  className="flex items-center justify-between gap-3"
-                >
-                  <span className="flex items-center gap-2.5 text-sm">
-                    <t.icon className="size-4 text-accent" />
-                    {t.label}
-                  </span>
-                  <span className="flex items-center gap-2 text-neutral-400">
-                    <span className="font-semibold text-neutral-100">
+              <Row
+                key={t.label}
+                href={t.href}
+                leading={<IconTile icon={t.icon} />}
+                title={t.label}
+                trailing={
+                  <>
+                    <span className="text-sm font-semibold tabular-nums text-foreground">
                       {t.count}
                     </span>
                     <ChevronRight className="size-4" />
-                  </span>
-                </Link>
-              </li>
+                  </>
+                }
+              />
             ))}
-          </ul>
-        </Card>
-      ) : (
-        <Card>
-          <div className="flex items-center gap-2.5 text-sm text-neutral-400">
-            <CircleCheck className="size-4 text-emerald-400" />
-            Nessuna azione in sospeso.
           </div>
-        </Card>
-      )}
+        ) : (
+          <Row
+            leading={<IconTile icon={CircleCheck} tone="muted" />}
+            title="Tutto in pari"
+            subtitle="Nessuna azione in sospeso"
+          />
+        )}
+      </section></StaggerItem>
 
       {/* I tuoi clienti */}
       {clientList.length > 0 && (
-        <section>
+        <StaggerItem><section>
           <SectionLabel
             right={
               <Link
                 href="/coach/clienti"
-                className="text-xs text-accent transition-colors hover:text-white"
+                className="text-xs text-muted transition-colors hover:text-foreground"
               >
                 Tutti
               </Link>
@@ -220,44 +238,44 @@ export default async function CoachHome() {
           >
             I tuoi clienti
           </SectionLabel>
-          <ul className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             {clientList.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={`/coach/clienti/${c.id}`}
-                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5 transition-colors hover:border-white/20"
-                >
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/5 text-xs font-medium text-neutral-300">
-                    {initials(c.full_name)}
-                  </span>
-                  <span className="flex-1 truncate text-sm">{c.full_name}</span>
-                  <ChevronRight className="size-4 text-neutral-600" />
-                </Link>
-              </li>
+              <Row
+                key={c.id}
+                href={`/coach/clienti/${c.id}`}
+                leading={<Avatar name={c.full_name} />}
+                title={c.full_name}
+                trailing={<ChevronRight className="size-4" />}
+              />
             ))}
-          </ul>
-        </section>
+          </div>
+        </section></StaggerItem>
       )}
 
       {/* Strumenti */}
-      <section>
+      <StaggerItem><section>
         <SectionLabel>Strumenti</SectionLabel>
         <div className="grid grid-cols-2 gap-3">
           {sections.map((s) => (
-            <Card key={s.title} href={s.href ?? "#"} className="flex flex-col">
+            <Card key={s.title} href={s.href ?? "#"} className="flex flex-col gap-3">
               <IconTile icon={s.icon} tone={s.muted ? "muted" : "accent"} />
-              <span
-                className={`mt-3 font-medium ${s.muted ? "text-neutral-400" : ""}`}
-              >
-                {s.title}
-              </span>
-              <span className="mt-0.5 text-xs text-neutral-500">
-                {s.subtitle}
+              <span>
+                <span
+                  className={`block text-sm font-medium ${
+                    s.muted ? "text-muted" : "text-foreground"
+                  }`}
+                >
+                  {s.title}
+                </span>
+                <span className="mt-0.5 block text-xs text-faint">
+                  {s.subtitle}
+                </span>
               </span>
             </Card>
           ))}
         </div>
-      </section>
+      </section></StaggerItem>
+      </Stagger>
     </Page>
   );
 }
