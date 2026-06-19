@@ -4,10 +4,19 @@ import { useFormStatus } from "react-dom";
 import { Sparkles } from "@/components/ui/icons";
 import { btn } from "@/components/ui/kit";
 
-// Pulsante "Genera bozza" con feedback di caricamento: mentre la server action
-// gira (~30s) mostra una rotella e "Generazione in corso…", e si disabilita per
-// evitare doppi invii. useFormStatus legge lo stato del <form> genitore.
-export function GenerateButton({ disabled }: { disabled?: boolean }) {
+// Pulsante AI con feedback di caricamento: mentre la server action gira (~30s)
+// mostra una rotella e si disabilita per evitare doppi invii. useFormStatus
+// legge lo stato del <form> genitore. Le etichette sono personalizzabili
+// (default = generazione scheda) così lo stesso pulsante serve più automazioni.
+export function GenerateButton({
+  disabled,
+  idleLabel = "Genera bozza con l'AI",
+  pendingLabel = "Generazione in corso…",
+}: {
+  disabled?: boolean;
+  idleLabel?: string;
+  pendingLabel?: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -39,12 +48,12 @@ export function GenerateButton({ disabled }: { disabled?: boolean }) {
               d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
             />
           </svg>
-          Generazione in corso…
+          {pendingLabel}
         </>
       ) : (
         <>
           <Sparkles className="size-4" />
-          Genera bozza con l&apos;AI
+          {idleLabel}
         </>
       )}
     </button>

@@ -167,3 +167,49 @@ end $$;
 
 reset role;
 rollback;
+
+-- -----------------------------------------------------------------------------
+-- TEST 3 — progress_reports: il cliente vede SOLO i report 'published'
+--   (le bozze del coach restano riservate, come per program_versions).
+-- -----------------------------------------------------------------------------
+begin;
+
+insert into public.tenants (id, name)
+  values ('0000000a-0000-0000-0000-00000000000a', 'Tenant A');
+
+insert into auth.users (instance_id, id, aud, role, email)
+  values ('00000000-0000-0000-0000-000000000000',
+          '00000000-0000-0000-0000-0000000000d1',
+          'authenticated', 'authenticated', 'cliente.test@example.com');
+
+insert into public.profiles (id, tenant_id, role, full_name)
+  values ('00000000-0000-0000-0000-0000000000d1',
+          '0000000a-0000-0000-0000-00000000000a', 'client', 'Cliente Test');
+
+insert into public.clients (id, tenant_id, profile_id, full_name)
+  values ('c1d0000a-0000-0000-0000-00000000000a',
+          '0000000a-0000-0000-0000-00000000000a',
+          '00000000-0000-0000-0000-0000000000d1', 'Cliente Test');
+
+-- un report DRAFT (riservato al coach) e uno PUBLISHED (visibile al cliente)
+insert into public.progress_reports (tenant_id, client_id, status, content) values
+  ('0000000a-0000-0000-0000-00000000000a', 'c1d0000a-0000-0000-0000-00000000000a',
+   'draft',     '{"headline":"bozza riservata"}'::jsonb),
+  ('0000000a-0000-0000-0000-00000000000a', 'c1d0000a-0000-0000-0000-00000000000a',
+   'published', '{"headline":"report condiviso"}'::jsonb);
+
+set local request.jwt.claims to
+  '{"sub":"00000000-0000-0000-0000-0000000000d1","role":"authenticated"}';
+set local role authenticated;
+
+do $$
+begin
+  assert (select count(*) from public.progress_reports) = 1,
+    'INVARIANTE FALLITA: il cliente vede report non pubblicati (bozze)';
+  assert (select status from public.progress_reports) = 'published',
+    'INVARIANTE FALLITA: il cliente vede un report con status diverso da published';
+  raise notice 'OK: il cliente vede SOLO il report progressi published';
+end $$;
+
+reset role;
+rollback;

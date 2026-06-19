@@ -432,3 +432,69 @@ export async function saveProgramVersion(formData: FormData) {
   revalidatePath(`/coach/programmi/${versionId}`);
   redirect(`/coach/programmi/${versionId}?saved=1`);
 }
+
+// --- Analisi progressi AI -----------------------------------------------------
+
+// Chiama la Edge Function che analizza allenamenti + check-in e produce una
+// BOZZA di report progressi. Poi porta il coach alla pagina del report.
+export async function generateProgressReport(formData: FormData) {
+  const { profile } = await getCurrentProfile();
+  if (!profile || !isStaff(profile.role)) redirect("/");
+
+  const clientId = String(formData.get("client_id") ?? "");
+  if (!clientId) redirect("/coach/progressi");
+
+  const supabase = await createServerSupabase();
+  // Inoltra il token utente alla Edge Function (verifica staff + tenant).
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const { data, error } = await supabase.functions.invoke("analyze-progress", {
+    body: { client_id: clientId },
+    headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+  });
+
+  if (error) {
+    redirect(
+      "/coach/progressi?error=" +
+        encodeURIComponent("Analisi AI non riuscita: " + error.message),
+    );
+  }
+  if (data?.error) {
+    redirect("/coach/progressi?error=" + encodeURIComponent(data.error));
+  }
+
+  revalidatePath("/coach/progressi");
+  if (data?.report_id) redirect(`/coach/progressi/${data.report_id}`);
+  redirect("/coach/progressi");
+}
+
+// Il coach approva la bozza di report (finalizzata lato coach). Solo una bozza
+// si approva; lo scope sul tenant è garantito da RLS + vincolo esplicito.
+export async function approveProgressReport(formData: FormData) {
+  const { profile } = await getCurrentProfile();
+  if (!profile || !isStaff(profile.role)) redirect("/");
+
+  const reportId = String(formData.get("report_id") ?? "");
+  if (!reportId) redirect("/coach/progressi");
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from("progress_reports")
+    .update({
+      status: "approved",
+      approved_at: new Date().toISOString(),
+      reviewed_by: profile.id,
+    })
+    .eq("id", reportId)
+    .eq("tenant_id", profile.tenant_id) // difesa in profondità oltre alla RLS
+    .eq("status", "draft");
+  if (error) {
+    redirect(
+      `/coach/progressi/${reportId}?error=` + encodeURIComponent(error.message),
+    );
+  }
+
+  revalidatePath(`/coach/progressi/${reportId}`);
+  redirect(`/coach/progressi/${reportId}?approved=1`);
+}
